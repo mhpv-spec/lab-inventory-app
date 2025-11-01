@@ -319,8 +319,8 @@
                 category: "دسته‌بندی",
                 name: "نام و مشخصات",
                 suppliers: "تامین‌کنندگان تایید شده",
-                verification: "Verification",
-                lowStock: "Low Stock",
+                verification: "Verification", // Farsi needed
+                lowStock: "Low Stock", // Farsi needed
                 actions: "عملیات"
               },
               deleteConfirm: "آیا از حذف این آیتم اصلی مطمئن هستید؟",
@@ -350,7 +350,7 @@
               header: {
                 name: "نام کالا",
                 lot: "شماره لات",
-                received: "دریافت",
+                received: "دریافت", // Farsi needed
                 expires: "انقضا",
                 quantity: "تعداد",
                 location: "محل نگهداری",
@@ -481,7 +481,6 @@
           );
         };
         
-        // Custom hook to use translations
         const useLang = () => useContext(LangContext);
         
 
@@ -521,10 +520,8 @@
 
         const exportToCSV = (data, headers, filename, t) => {
           const csvRows = [];
-          // Translate headers for CSV
           const translatedHeaders = headers.map(h => {
-             // Try to find header in log, then masterlist, then fallback to key
-             return t(`log.header.${h}`) || t(`masterList.header.${h}`) || h;
+             return t(`log.header.${h}`) || t(`masterList.header.${h}`) || t(`inventory.header.${h}`) || h;
           });
           csvRows.push(translatedHeaders.map(sanitizeForCSV).join(','));
 
@@ -539,7 +536,6 @@
               if (headerKey === 'userEmail' && item.userEmail) {
                 return sanitizeForCSV(item.userEmail);
               }
-              // Translate status and action fields
               if (headerKey === 'status') {
                 const statusKey = Object.keys(translations.en.inventory.status).find(key => translations.en.inventory.status[key] === item.status);
                 return sanitizeForCSV(t(`inventory.status.${statusKey}`) || item.status);
@@ -548,13 +544,17 @@
                  const actionKey = Object.keys(translations.en.log.actions).find(key => translations.en.log.actions[key] === item.action);
                 return sanitizeForCSV(t(`log.actions.${actionKey}`) || item.action);
               }
+              // For masterlist export
+              if (headerKey === 'category') {
+                const catKey = Object.keys(translations.en.masterList.categories).find(key => translations.en.masterList.categories[key] === item.category);
+                return sanitizeForCSV(t(`masterList.categories.${catKey}`) || item.category);
+              }
               return sanitizeForCSV(item[headerKey]);
             });
             csvRows.push(values.join(','));
           }
 
           const csvString = csvRows.join('\n');
-          // Add BOM for Excel to recognize UTF-8 (especially for Farsi)
           const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
           const blob = new Blob([bom, csvString], { type: 'text/csv;charset=utf-8;' });
           
@@ -682,7 +682,6 @@
           const logCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventoryLog');
           const masterItem = item.masterItem || { itemId: 'N/A', nameAndSpec: 'N/A' };
           
-          // Use the English key as the persistent log action
           const action = translations['en'].log.actions[actionKey] || actionKey;
           
           const logEntry = {
@@ -693,7 +692,7 @@
             masterItemId: item.masterItemId,
             itemName: `${masterItem.itemId} - ${masterItem.nameAndSpec}`,
             lotNumber: item.lotNumber,
-            action: action, // Store the English action
+            action: action, 
             quantityChange: quantityChange,
             newQuantity: newQuantity,
             status: newStatus || item.status,
@@ -792,8 +791,8 @@
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.category')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.name')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.suppliers')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.verification')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.lowStock')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.modal.verification')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.modal.lowStock')}</th>
                       {canManage && <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.actions')}</th>}
                     </tr>
                   </thead>
@@ -801,7 +800,7 @@
                     {masterItems.map((item) => (
                       <tr key={item.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemId}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t('masterList.categories').includes(item.category) ? item.category : t('masterList.categories')[0]}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{categories.includes(item.category) ? item.category : categories[0]}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.nameAndSpec}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.approvedSuppliers}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.verificationAction}</td>
@@ -1122,7 +1121,7 @@
               setIsLoading(false);
             }, (err) => { console.error("Error fetching log: ", err); setError(t('log.error')); setIsLoading(false); });
             return () => unsubscribe();
-          }, [db, masterItemMap]);
+          }, [db, masterItemMap, t]);
           
           const handleExport = () => {
              const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'action', 'quantityChange', 'newQuantity', 'status'];
@@ -1170,7 +1169,6 @@
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {logItems.map((item) => {
-                      // Translate action and status for display
                       const actionKey = Object.keys(translations.en.log.actions).find(key => translations.en.log.actions[key] === item.action);
                       const displayAction = t(`log.actions.${actionKey}`) || item.action;
                       
@@ -1218,7 +1216,7 @@
               setIsLoading(false);
             }, (err) => { console.error("Error fetching users: ", err); setError(t('admin.error')); setIsLoading(false); });
             return () => unsubscribe();
-          }, [db, userRole]);
+          }, [db, userRole, t]);
           
           const handleRoleChange = async (userId, newRole) => {
             if (userId === user.uid && newRole !== 'admin') {
@@ -1255,7 +1253,7 @@
                     {users.map((u) => (
                       <tr key={u.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.id}</td>
+                        <td className="px-6 py-4 whitespace-nowJrap text-sm text-gray-500">{u.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <Select
                             id={`role-${u.id}`}
@@ -1350,14 +1348,14 @@
           const [auth, setAuth] = useState(null);
           const [currentUser, setCurrentUser] = useState(null);
           const [userRole, setUserRole] = useState(null);
-          const [isAuthReady, setIsAuthReady] = useState(false);
+          const [isAuthReady, setIsAuthReady] = useState(false); // This is the main loading gate
           const [currentPage, setCurrentPage] = useState('inventory'); 
           const [masterItems, setMasterItems] = useState([]);
           const [masterLoading, setMasterLoading] = useState(true);
           const [masterError, setMasterError] = useState(null);
           const [authError, setAuthError] = useState(null);
 
-          // Initialize Firebase and Auth
+          // Initialize Firebase
           useEffect(() => {
             if (!window.firebase) {
               console.error("Firebase SDKs not loaded!");
@@ -1371,58 +1369,72 @@
               const dbInstance = getFirestore(app);
               setAuth(authInstance);
               setDb(dbInstance);
-
-              // *** BUG FIX IS HERE ***
-              // This logic is now robust and will not hang.
-              const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
-                try {
-                  if (user) {
-                    // User is signed in. Fetch their role.
-                    const userDocRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'users', user.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    
-                    if (userDoc.exists()) {
-                      setUserRole(userDoc.data().role);
-                    } else {
-                      // This is a failsafe for the admin or a new user.
-                      // If the doc doesn't exist, they MUST be a new user (role: 'viewer')
-                      // The admin's doc *must* exist from the manual setup.
-                      // We create a 'viewer' doc for a new user on the fly.
-                      console.log("Creating new user doc for " + user.email);
-                      await setDoc(userDocRef, { email: user.email, role: 'viewer' });
-                      setUserRole('viewer');
-                    }
-                    setCurrentUser(user);
-                    setAuthError(null);
-                  } else {
-                    // User is signed out
-                    setCurrentUser(null);
-                    setUserRole(null);
-                  }
-                } catch (e) {
-                  console.error("Critical Auth Error: ", e);
-                  setAuthError("A critical error occurred while fetching user permissions: " + e.message);
-                  setCurrentUser(null); // Log out on critical error
-                  setUserRole(null);
-                } finally {
-                  // This is the most important part.
-                  // Always set ready, even if auth logic fails.
-                  setIsAuthReady(true);
-                }
-              });
-              return () => unsubscribe();
-              
             } catch (e) {
               console.error("Error initializing Firebase: ", e);
               setAuthError(t('app.authError'));
               setIsAuthReady(true); 
             }
-          }, [t]); // Added `t` dependency for error messages
+          }, [t]);
+
+          // Listen for Auth changes and fetch role
+          useEffect(() => {
+            if (!auth || !db) return; // Wait for firebase to be initialized
+
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+              try {
+                if (user) {
+                  // User is signed in. Fetch their role.
+                  const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
+                  const userDoc = await getDoc(userDocRef);
+                  
+                  if (userDoc.exists()) {
+                    setUserRole(userDoc.data().role);
+                  } else {
+                    // This is a failsafe.
+                    // This handles the Super Admin (who created their doc manually)
+                    // OR a brand new user who just signed up.
+                    // Let's check if the doc *was* created but isn't readable yet (rare)
+                    // Or, more likely, this is a new sign-up and we need to create their doc.
+                    console.warn("User doc not found for " + user.uid + ". Checking again or creating.");
+                    try {
+                      // Let's try to create it, just in case.
+                      // The 'create' rule allows this.
+                      await setDoc(userDocRef, { email: user.email, role: 'viewer' });
+                      setUserRole('viewer');
+                    } catch(createError) {
+                      // This might fail if the doc *does* exist but we couldn't read it
+                      // (e.g., if rules are still propagating)
+                      // Let's re-read the Super Admin doc just in case.
+                       const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid));
+                       if (adminDoc.exists() && adminDoc.data().role) {
+                         setUserRole(adminDoc.data().role);
+                       } else {
+                         throw createError; // Throw the original creation error
+                       }
+                    }
+                  }
+                  setCurrentUser(user);
+                } else {
+                  // User is signed out
+                  setCurrentUser(null);
+                  setUserRole(null);
+                }
+              } catch (e) {
+                console.error("Critical Auth Error: ", e);
+                setAuthError("A critical error occurred while fetching user permissions: " + e.message);
+                setCurrentUser(null); // Log out on critical error
+                setUserRole(null);
+              } finally {
+                setIsAuthReady(true); // Always set ready
+              }
+            });
+            return () => unsubscribe();
+          }, [auth, db]); // Depends on auth and db
 
           // Fetch Master List
           useEffect(() => {
-            if (!isAuthReady || !db || !currentUser) {
-                if (currentUser === null) setMasterLoading(false);
+            if (!isAuthReady || !db || !currentUser || !userRole) {
+                if (!currentUser) setMasterLoading(false);
                 return;
             }
             setMasterLoading(true);
@@ -1437,7 +1449,7 @@
               setMasterLoading(false);
             });
             return () => unsubscribe();
-          }, [db, isAuthReady, currentUser, t]);
+          }, [db, isAuthReady, currentUser, userRole, t]); // Added userRole dependency
           
           const handleSignOut = async () => {
             if (auth) {
@@ -1487,6 +1499,7 @@
           if (!isAuthReady) {
              return <div id="loading">{t('app.loading')}</div>
           }
+          
           if (authError) {
              return (
                 <div className="bg-red-100 border-s-4 border-red-500 text-red-700 p-4 m-4 text-start" role="alert">
@@ -1494,12 +1507,13 @@
                 </div>
               );
           }
+
           if (!currentUser) {
              return <AuthPage auth={auth} db={db} />
           }
           
           if (!userRole) {
-             // This state (currentUser is set but userRole is null) is the new loading screen
+             // User is logged in, but role is still being fetched.
              return <div id="loading">{t('app.loadingPermissions')}</div>
           }
 
