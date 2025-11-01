@@ -123,15 +123,14 @@
               user: "User",
               signOut: "Sign Out",
               connectionError: "Connection Error",
-              connectionErrorMsg: "Failed to load Firebase SDKs. Please check your network connection and refresh.",
               authError: "Failed to initialize database. Check Firebase config.",
-              authFailed: "Authentication failed. Cannot connect to database.",
             },
             nav: {
               inventory: "Active Inventory",
               masterList: "Master List",
               log: "Inventory Log",
-              admin: "Manage Accounts"
+              admin: "Manage Accounts",
+              labs: "Manage Labs" // New
             },
             auth: {
               signInTitle: "Sign in to your account",
@@ -183,7 +182,8 @@
             inventory: {
               title: "Active Inventory",
               addNew: "Add New Stock",
-              noMasterItem: "Please add at least one item to the **Master Consumable List** before adding stock to the inventory.",
+              noMasterItem: "Please add at least one item to the **Master Consumable List** before adding stock.",
+              noLab: "Please add at least one lab in **Manage Labs** before adding stock.", // New
               lowStockWarn: "Low Stock Warning",
               lowStockMsg: "Currently {quantity} in stock (threshold is {threshold}).",
               loading: "Loading inventory...",
@@ -191,7 +191,7 @@
               header: {
                 name: "Item Name",
                 lot: "Lot #",
-                received: "Received",
+                lab: "Lab", // New
                 expires: "Expires",
                 quantity: "Quantity",
                 location: "Location",
@@ -205,14 +205,14 @@
                 expired: "Expired"
               },
               take: "Take",
-              edit: "Edit",
-              delete: "Delete",
               deleteConfirm: "Are you sure you want to delete Lot {lotNumber}? This action will be logged.",
               modal: {
                 editTitle: "Edit Inventory Item",
                 addTitle: "Add New Stock Item",
                 masterItem: "Master Item",
                 selectItem: "Select an approved item",
+                lab: "Lab", // New
+                selectLab: "Select a lab", // New
                 lot: "Lot / Batch Number",
                 received: "Date Received",
                 expires: "Expiration Date",
@@ -242,6 +242,7 @@
                 userEmail: "User",
                 itemName: "Item Name",
                 lotNumber: "Lot #",
+                labName: "Lab", // New
                 action: "Action",
                 quantityChange: "Change",
                 newQuantity: "New Qty",
@@ -272,6 +273,25 @@
                 technician: "Technician",
                 viewer: "Viewer"
               }
+            },
+            labs: { // New
+              title: "Manage Labs",
+              addNew: "Add New Lab",
+              loading: "Loading labs...",
+              error: "Failed to load labs.",
+              header: {
+                name: "Lab Name",
+                actions: "Actions"
+              },
+              deleteConfirm: "Are you sure you want to delete the '{labName}' lab?",
+              modal: {
+                editTitle: "Edit Lab Name",
+                addTitle: "Add New Lab",
+                name: "Lab Name (e.g., Metals Lab)",
+                cancel: "Cancel",
+                save: "Save Changes",
+                add: "Add Lab"
+              }
             }
           },
           fa: {
@@ -282,15 +302,14 @@
               user: "کاربر",
               signOut: "خروج",
               connectionError: "خطای اتصال",
-              connectionErrorMsg: "بارگذاری Firebase SDK با مشکل مواجه شد. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.",
               authError: "مقداردهی اولیه پایگاه داده ناموفق بود. تنظیمات Firebase را بررسی کنید.",
-              authFailed: "احراز هویت ناموفق بود. امکان اتصال به پایگاه داده وجود ندارد.",
             },
             nav: {
               inventory: "موجودی فعال",
               masterList: "لیست اصلی",
               log: "گزارش انبار",
-              admin: "مدیریت حساب‌ها"
+              admin: "مدیریت حساب‌ها",
+              labs: "مدیریت آزمایشگاه‌ها" // New
             },
             auth: {
               signInTitle: "ورود به حساب کاربری",
@@ -319,8 +338,8 @@
                 category: "دسته‌بندی",
                 name: "نام و مشخصات",
                 suppliers: "تامین‌کنندگان تایید شده",
-                verification: "Verification", // Farsi needed
-                lowStock: "Low Stock", // Farsi needed
+                verification: "تاییدیه",
+                lowStock: "حد انبار",
                 actions: "عملیات"
               },
               deleteConfirm: "آیا از حذف این آیتم اصلی مطمئن هستید؟",
@@ -342,7 +361,8 @@
             inventory: {
               title: "موجودی فعال",
               addNew: "افزودن موجودی جدید",
-              noMasterItem: "لطفاً قبل از افزودن موجودی، حداقل یک آیتم به **لیست اصلی مواد مصرفی** اضافه کنید.",
+              noMasterItem: "لطفاً قبل از افزودن موجودی، حداقل یک آیتم به **لیست اصلی** اضافه کنید.",
+              noLab: "لطفاً قبل از افزودن موجودی، حداقل یک آزمایشگاه در **مدیریت آزمایشگاه‌ها** تعریف کنید.", // New
               lowStockWarn: "هشدار کمبود موجودی",
               lowStockMsg: "در حال حاضر {quantity} عدد موجود است (آستانه {threshold} است).",
               loading: "در حال بارگذاری موجودی...",
@@ -350,7 +370,8 @@
               header: {
                 name: "نام کالا",
                 lot: "شماره لات",
-                received: "دریافت", // Farsi needed
+                lab: "آزمایشگاه", // New
+                received: "دریافت",
                 expires: "انقضا",
                 quantity: "تعداد",
                 location: "محل نگهداری",
@@ -364,14 +385,14 @@
                 expired: "منقضی شده"
               },
               take: "برداشت",
-              edit: "ویرایش",
-              delete: "حذف",
               deleteConfirm: "آیا از حذف لات {lotNumber} مطمئن هستید؟ این عملیات ثبت خواهد شد.",
               modal: {
                 editTitle: "ویرایش آیتم موجودی",
                 addTitle: "افزودن موجودی جدید",
                 masterItem: "آیتم اصلی",
                 selectItem: "یک آیتم تایید شده را انتخاب کنید",
+                lab: "آزمایشگاه", // New
+                selectLab: "یک آزمایشگاه را انتخاب کنید", // New
                 lot: "شماره لات / بچ",
                 received: "تاریخ دریافت",
                 expires: "تاریخ انقضا",
@@ -401,6 +422,7 @@
                 userEmail: "کاربر",
                 itemName: "نام کالا",
                 lotNumber: "شماره لات",
+                labName: "آزمایشگاه", // New
                 action: "عملیات",
                 quantityChange: "تغییر",
                 newQuantity: "موجودی جدید",
@@ -431,29 +453,42 @@
                 technician: "تکنسین",
                 viewer: "ناظر"
               }
+            },
+            labs: { // New
+              title: "مدیریت آزمایشگاه‌ها",
+              addNew: "افزودن آزمایشگاه جدید",
+              loading: "در حال بارگذاری آزمایشگاه‌ها...",
+              error: "بارگذاری آزمایشگاه‌ها ناموفق بود.",
+              header: {
+                name: "نام آزمایشگاه",
+                actions: "عملیات"
+              },
+              deleteConfirm: "آیا از حذف آزمایشگاه '{labName}' مطمئن هستید؟",
+              modal: {
+                editTitle: "ویرایش نام آزمایشگاه",
+                addTitle: "افزودن آزمایشگاه جدید",
+                name: "نام آزمایشگاه (مثال: آزمایشگاه فلزات)",
+                cancel: "لغو",
+                save: "ذخیره تغییرات",
+                add: "افزودن"
+              }
             }
           }
         };
 
         // --- 2. LANGUAGE CONTEXT & PROVIDER ---
         const LangContext = createContext();
-
         const LangProvider = ({ children }) => {
-          const [language, setLanguage] = useState('en'); // Default to English
-
+          const [language, setLanguage] = useState('en'); 
           useEffect(() => {
-            // Set direction for RTL support
             document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr';
             document.documentElement.lang = language;
           }, [language]);
-
           const t = useCallback((key, params = {}) => {
             const keys = key.split('.');
             let result = translations[language];
             try {
-              for (const k of keys) {
-                result = result[k];
-              }
+              for (const k of keys) { result = result[k]; }
               if (typeof result === 'string') {
                 return result.replace(/\{(\w+)\}/g, (_, paramName) => params[paramName] || '');
               }
@@ -461,29 +496,22 @@
             } catch (e) {
               try {
                 let fallback = translations['en'];
-                for (const k of keys) {
-                  fallback = fallback[k];
-                }
+                for (const k of keys) { fallback = fallback[k]; }
                 if (typeof fallback === 'string') {
                   return fallback.replace(/\{(\w+)\}/g, (_, paramName) => params[paramName] || '');
                 }
                 return fallback || key;
-              } catch (e2) {
-                 return key;
-              }
+              } catch (e2) { return key; }
             }
           }, [language]);
-
           return (
             <LangContext.Provider value={{ language, setLanguage, t }}>
               {children}
             </LangContext.Provider>
           );
         };
-        
         const useLang = () => useContext(LangContext);
         
-
         // --- Helper Functions & Constants ---
         const formatDate = (dateInput, includeTime = false) => {
           if (!dateInput) return 'N/A';
@@ -491,14 +519,10 @@
           if (dateInput && dateInput.toDate) { date = dateInput.toDate(); } 
           else if (typeof dateInput === 'string') { date = new Date(dateInput); } 
           else { date = dateInput; }
-          
           if (!date || isNaN(date.getTime())) return 'N/A';
-          
           const locale = document.documentElement.lang === 'fa' ? 'fa-IR' : 'en-US';
-          
           const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit', calendar: locale === 'fa-IR' ? 'persian' : 'gregory' };
           const timeOptions = { hour: '2-digit', minute: '2-digit' };
-          
           let formattedDate;
           if (includeTime) {
             formattedDate = date.toLocaleString(locale, {...dateOptions, ...timeOptions});
@@ -524,7 +548,6 @@
              return t(`log.header.${h}`) || t(`masterList.header.${h}`) || t(`inventory.header.${h}`) || h;
           });
           csvRows.push(translatedHeaders.map(sanitizeForCSV).join(','));
-
           for (const item of data) {
             const values = headers.map(headerKey => {
               if (headerKey === 'itemName' && item.masterItem) {
@@ -544,20 +567,21 @@
                  const actionKey = Object.keys(translations.en.log.actions).find(key => translations.en.log.actions[key] === item.action);
                 return sanitizeForCSV(t(`log.actions.${actionKey}`) || item.action);
               }
-              // For masterlist export
               if (headerKey === 'category') {
                 const catKey = Object.keys(translations.en.masterList.categories).find(key => translations.en.masterList.categories[key] === item.category);
                 return sanitizeForCSV(t(`masterList.categories.${catKey}`) || item.category);
+              }
+              // New: Handle labName for log export
+              if (headerKey === 'labName' && item.labName) {
+                return sanitizeForCSV(item.labName);
               }
               return sanitizeForCSV(item[headerKey]);
             });
             csvRows.push(values.join(','));
           }
-
           const csvString = csvRows.join('\n');
           const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
           const blob = new Blob([bom, csvString], { type: 'text/csv;charset=utf-8;' });
-          
           const link = document.createElement('a');
           if (link.download !== undefined) { 
             const url = URL.createObjectURL(blob);
@@ -569,7 +593,6 @@
             document.body.removeChild(link);
           }
         };
-
 
         // --- Inline SVG Icons ---
         const IconPlus = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
@@ -584,6 +607,7 @@
         const IconAlertTriangle = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 inline-block me-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>);
         const IconAdmin = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
         const IconGlobe = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>);
+        const IconLab = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v7.3a1 1 0 0 1-1.7.7L6 8l-2.3 2.3a1 1 0 0 1-1.7-.7V2"></path><path d="M14 2v7.3a1 1 0 0 0 1.7.7L18 8l2.3 2.3a1 1 0 0 0 1.7-.7V2"></path><path d="M8 22h8"></path><path d="M7 15h10"></path><path d="M10 15v7"></path><path d="M14 15v7"></path></svg>);
 
 
         // --- Reusable UI Components ---
@@ -681,7 +705,6 @@
           }
           const logCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventoryLog');
           const masterItem = item.masterItem || { itemId: 'N/A', nameAndSpec: 'N/A' };
-          
           const action = translations['en'].log.actions[actionKey] || actionKey;
           
           const logEntry = {
@@ -692,6 +715,8 @@
             masterItemId: item.masterItemId,
             itemName: `${masterItem.itemId} - ${masterItem.nameAndSpec}`,
             lotNumber: item.lotNumber,
+            labId: item.labId || 'N/A', // New: Log the Lab ID
+            labName: item.labName || 'N/A', // New: Log the Lab Name
             action: action, 
             quantityChange: quantityChange,
             newQuantity: newQuantity,
@@ -791,8 +816,8 @@
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.category')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.name')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.suppliers')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.modal.verification')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.modal.lowStock')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.verification')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.lowStock')}</th>
                       {canManage && <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.actions')}</th>}
                     </tr>
                   </thead>
@@ -840,7 +865,7 @@
         };
 
         // --- Active Inventory Component ---
-        const ActiveInventory = ({ db, user, userRole, masterItems }) => {
+        const ActiveInventory = ({ db, user, userRole, masterItems, labs, labMap }) => {
           const { t } = useLang();
           const [inventoryItems, setInventoryItems] = useState([]);
           const [isLoading, setIsLoading] = useState(true);
@@ -851,7 +876,7 @@
           const [currentItem, setCurrentItem] = useState(null); 
           const [form, setForm] = useState({
             masterItemId: '', lotNumber: '', dateReceived: '', expirationDate: '',
-            quantity: 1, storageLocation: '', status: 'Approved for Use',
+            quantity: 1, storageLocation: '', status: 'Approved for Use', labId: '' // New
           });
           
           const statuses = Object.keys(t('inventory.status')).map(key => t(`inventory.status.${key}`));
@@ -863,26 +888,35 @@
               return acc;
             }, {});
           }, [masterItems]);
+          
+          // New: Add labName to inventory items
+          const populatedInventory = useMemo(() => {
+            return inventoryItems.map(item => ({
+              ...item,
+              masterItem: masterItemMap[item.masterItemId] || { itemId: 'N/A', nameAndSpec: 'N/A' },
+              labName: labMap[item.labId]?.name || 'N/A'
+            }))
+          }, [inventoryItems, masterItemMap, labMap]);
 
           useEffect(() => {
             if (!db) return;
             setIsLoading(true);
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
             const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-              const items = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return { id: doc.id, ...data, masterItem: masterItemMap[data.masterItemId] || { itemId: 'N/A', nameAndSpec: 'N/A' } }
-              });
+              const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setInventoryItems(items);
               setIsLoading(false);
             }, (err) => { console.error("Error fetching inventory: ", err); setError(t('inventory.error')); setIsLoading(false); });
             return () => unsubscribe();
-          }, [db, user.uid, masterItemMap, t]);
+          }, [db, user.uid, t]);
 
           const resetForm = () => {
             setForm({
-              masterItemId: masterItems.length > 0 ? masterItems[0].id : '', lotNumber: '', dateReceived: '',
-              expirationDate: '', quantity: 1, storageLocation: '', status: t('inventory.status.approved'),
+              masterItemId: masterItems.length > 0 ? masterItems[0].id : '', 
+              lotNumber: '', dateReceived: '',
+              expirationDate: '', quantity: 1, storageLocation: '', 
+              status: t('inventory.status.approved'),
+              labId: labs.length > 0 ? labs[0].id : '' // New
             });
             setIsEditing(false);
             setCurrentItem(null);
@@ -894,6 +928,7 @@
               masterItemId: item.masterItemId, lotNumber: item.lotNumber, dateReceived: item.dateReceived,
               expirationDate: item.expirationDate, quantity: item.quantity,
               storageLocation: item.storageLocation, status: item.status,
+              labId: item.labId // New
             });
             setIsEditing(true);
             setCurrentItem(item); 
@@ -912,6 +947,12 @@
             if (!db || !user || !canManage) return;
             try {
               const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
+              const itemForLog = {
+                 ...form,
+                 masterItem: masterItemMap[form.masterItemId],
+                 labName: labMap[form.labId]?.name || 'N/A'
+              };
+              
               if (isEditing) {
                 const docRef = doc(collectionRef, currentItem.id);
                 await setDoc(docRef, form);
@@ -920,14 +961,14 @@
                 if (oldQty !== newQty) {
                   const change = newQty - oldQty;
                   const actionKey = change > 0 ? "added" : "correction";
-                  await logChange(db, user, currentItem, actionKey, change, newQty, newStatus);
+                  await logChange(db, user, {...currentItem, ...itemForLog}, actionKey, change, newQty, newStatus);
                 }
                 if (oldStatus !== newStatus && oldQty === newQty) {
-                  await logChange(db, user, currentItem, "status", 0, newQty, newStatus);
+                  await logChange(db, user, {...currentItem, ...itemForLog}, "status", 0, newQty, newStatus);
                 }
               } else {
                 const newDocRef = await addDoc(collectionRef, form);
-                const newItem = { ...form, id: newDocRef.id, masterItem: masterItemMap[form.masterItemId] };
+                const newItem = { ...itemForLog, id: newDocRef.id };
                 await logChange(db, user, newItem, "new", form.quantity, form.quantity);
               }
               closeModal();
@@ -938,6 +979,7 @@
             if (!db || !user || !currentItem || !canManage) return;
             const newQuantity = currentItem.quantity - takeAmount;
             try {
+              // 'currentItem' already has masterItem and labName mapped
               await logChange(db, user, currentItem, "used", -takeAmount, newQuantity, currentItem.status);
               const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', currentItem.id);
               await updateDoc(docRef, { quantity: newQuantity });
@@ -956,7 +998,7 @@
           
           const handleStatusChange = async (docId, newStatus) => {
             if (!db || !user || !canManage) return;
-            const item = inventoryItems.find(i => i.id === docId);
+            const item = populatedInventory.find(i => i.id === docId); // Use populated item
             if (!item) return;
             try {
               await logChange(db, user, item, "status", 0, item.quantity, newStatus);
@@ -973,8 +1015,8 @@
           };
           
           const lowStockItems = useMemo(() => {
-            return inventoryItems.map(item => {
-                const masterItem = masterItemMap[item.masterItemId];
+            return populatedInventory.map(item => {
+                const masterItem = item.masterItem;
                 const threshold = masterItem?.lowStockThreshold || 3;
                 if (item.quantity <= threshold && item.status === t('inventory.status.approved')) {
                   return { id: item.id, name: masterItem ? `${masterItem.itemId} - ${masterItem.nameAndSpec}` : 'Unknown Item',
@@ -982,14 +1024,14 @@
                 }
                 return null;
               }).filter(Boolean);
-          }, [inventoryItems, masterItemMap, t]);
+          }, [populatedInventory, t]);
 
           return (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-800">{t('inventory.title')}</h2>
                 {canManage && (
-                  <Button onClick={openAddModal} variant="primary" disabled={masterItems.length === 0}>
+                  <Button onClick={openAddModal} variant="primary" disabled={masterItems.length === 0 || labs.length === 0}>
                     <IconPlus /> {t('inventory.addNew')}
                   </Button>
                 )}
@@ -998,6 +1040,11 @@
               {masterItems.length === 0 && canManage && (
                  <div className="bg-yellow-100 border-s-4 border-yellow-500 text-yellow-700 p-4 mb-4 text-start" role="alert">
                    <p>{t('inventory.noMasterItem')}</p>
+                 </div>
+              )}
+              {labs.length === 0 && canManage && (
+                 <div className="bg-yellow-100 border-s-4 border-yellow-500 text-yellow-700 p-4 mb-4 text-start" role="alert">
+                   <p>{t('inventory.noLab')}</p>
                  </div>
               )}
 
@@ -1026,7 +1073,7 @@
                     <tr>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.name')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.lot')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.received')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.lab')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.expires')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.quantity')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.location')}</th>
@@ -1035,7 +1082,7 @@
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {inventoryItems.map((item) => {
+                    {populatedInventory.map((item) => {
                       const masterItem = item.masterItem;
                       const itemName = masterItem ? `${masterItem.itemId} - ${masterItem.nameAndSpec}` : "Loading...";
                       const statusColor = getStatusColor(item.status, item.expirationDate);
@@ -1047,14 +1094,14 @@
                         <tr key={item.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{itemName}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.dateReceived)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{item.labName}</td>
                           <td className={`px-6 py-4 whitespace-nowrap text-sm ${statusColor.includes('red') ? 'font-bold' : 'text-gray-500'}`}>{formatDate(item.expirationDate)}</td>
                           <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isLowStock ? 'font-bold text-yellow-700' : 'text-gray-500'}`}>{isLowStock && <IconAlertTriangle />}{item.quantity}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.storageLocation}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <select value={item.status} onChange={(e) => handleStatusChange(item.id, e.target.value)} disabled={!canManage} className={`text-xs font-medium rounded-full p-1 border-none ${statusColor}`}>
+                            <Select value={item.status} onChange={(e) => handleStatusChange(item.id, e.target.value)} disabled={!canManage} className={`text-xs font-medium rounded-full p-1 border-none ${statusColor}`}>
                               {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                            </Select>
                           </td>
                           {canManage && (
                             <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
@@ -1080,6 +1127,13 @@
                     <option value="" disabled>{t('inventory.modal.selectItem')}</option>
                     {masterItems.map(item => (<option key={item.id} value={item.id}>{item.itemId} - {item.nameAndSpec}</option>))}
                   </Select>
+                  
+                  {/* --- NEW LAB DROPDOWN --- */}
+                  <Select label={t('inventory.modal.lab')} id="labId" name="labId" value={form.labId} onChange={handleChange} required>
+                    <option value="" disabled>{t('inventory.modal.selectLab')}</option>
+                    {labs.map(lab => (<option key={lab.id} value={lab.id}>{lab.name}</option>))}
+                  </Select>
+                  
                   <Input label={t('inventory.modal.lot')} id="lotNumber" name="lotNumber" value={form.lotNumber} onChange={handleChange} required disabled={isEditing} />
                   <Input label={t('inventory.modal.received')} id="dateReceived" name="dateReceived" type="date" value={form.dateReceived} onChange={handleChange} required />
                   <Input label={t('inventory.modal.expires')} id="expirationDate" name="expirationDate" type="date" value={form.expirationDate} onChange={handleChange} />
@@ -1124,7 +1178,7 @@
           }, [db, masterItemMap, t]);
           
           const handleExport = () => {
-             const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'action', 'quantityChange', 'newQuantity', 'status'];
+             const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'labName', 'action', 'quantityChange', 'newQuantity', 'status']; // New: labName
             exportToCSV(logItems, headers, 'inventory-log.csv', t);
           };
           
@@ -1161,6 +1215,7 @@
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.userEmail')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.itemName')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.lotNumber')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.labName')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.action')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.quantityChange')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.newQuantity')}</th>
@@ -1171,7 +1226,6 @@
                     {logItems.map((item) => {
                       const actionKey = Object.keys(translations.en.log.actions).find(key => translations.en.log.actions[key] === item.action);
                       const displayAction = t(`log.actions.${actionKey}`) || item.action;
-                      
                       const statusKey = Object.keys(translations.en.inventory.status).find(key => translations.en.inventory.status[key] === item.status);
                       const displayStatus = t(`inventory.status.${statusKey}`) || item.status;
                       
@@ -1181,6 +1235,7 @@
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{item.userEmail}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemName}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{item.labName}</td>
                           <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{displayAction}</td>
                           <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{formatChange(item.quantityChange)}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.newQuantity}</td>
@@ -1253,7 +1308,7 @@
                     {users.map((u) => (
                       <tr key={u.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.email}</td>
-                        <td className="px-6 py-4 whitespace-nowJrap text-sm text-gray-500">{u.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <Select
                             id={`role-${u.id}`}
@@ -1272,6 +1327,125 @@
           );
         };
         
+        // --- NEW: Manage Labs Component ---
+        const ManageLabs = ({ db, user, userRole }) => {
+          const { t } = useLang();
+          const [labs, setLabs] = useState([]);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState(null);
+          const [isModalOpen, setIsModalOpen] = useState(false);
+          const [isEditing, setIsEditing] = useState(false);
+          const [currentLab, setCurrentLab] = useState(null);
+          const [labName, setLabName] = useState('');
+
+          useEffect(() => {
+            if (!db || userRole !== 'admin') {
+              setIsLoading(false);
+              return;
+            };
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
+            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+              const labList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setLabs(labList);
+              setIsLoading(false);
+            }, (err) => { console.error("Error fetching labs: ", err); setError(t('labs.error')); setIsLoading(false); });
+            return () => unsubscribe();
+          }, [db, userRole, t]);
+
+          const resetForm = () => {
+            setIsEditing(false);
+            setCurrentLab(null);
+            setLabName('');
+          };
+          const closeModal = () => {
+            setIsModalOpen(false);
+            resetForm();
+          };
+          
+          const openAddModal = () => {
+            resetForm();
+            setIsModalOpen(true);
+          };
+          
+          const openEditModal = (lab) => {
+            setIsEditing(true);
+            setCurrentLab(lab);
+            setLabName(lab.name);
+            setIsModalOpen(true);
+          };
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            if (!db || !labName) return;
+            try {
+              const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
+              if (isEditing) {
+                await setDoc(doc(collectionRef, currentLab.id), { name: labName });
+              } else {
+                await addDoc(collectionRef, { name: labName });
+              }
+              closeModal();
+            } catch (err) { console.error("Error saving lab: ", err); }
+          };
+          
+          const handleDelete = async (lab) => {
+            if (!window.confirm(t('labs.deleteConfirm', {labName: lab.name}))) return;
+            try {
+              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'labs', lab.id));
+            } catch (err) { console.error("Error deleting lab: ", err); }
+          };
+
+          if (userRole !== 'admin') {
+            return <div className="p-4 text-red-600">{t('admin.noPermission')}</div>;
+          }
+          if (isLoading) return <p>{t('labs.loading')}</p>;
+          if (error) return <p className="text-red-500">{error}</p>;
+
+          return (
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-800">{t('labs.title')}</h2>
+                <Button onClick={openAddModal} variant="primary">
+                  <IconPlus /> {t('labs.addNew')}
+                </Button>
+              </div>
+              
+              <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-start">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('labs.header.name')}</th>
+                      <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">{t('labs.header.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {labs.map((lab) => (
+                      <tr key={lab.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lab.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="secondary" onClick={() => openEditModal(lab)} aria-label="Edit"><IconEdit /></Button>
+                            <Button variant="danger" onClick={() => handleDelete(lab)} aria-label="Delete"><IconTrash /></Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              <Modal isOpen={isModalOpen} onClose={closeModal} title={isEditing ? t('labs.modal.editTitle') : t('labs.modal.addTitle')} allowClose={true}>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <Input label={t('labs.modal.name')} id="labName" name="labName" value={labName} onChange={(e) => setLabName(e.target.value)} required autoFocus />
+                  <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button type="button" variant="secondary" onClick={closeModal}>{t('labs.modal.cancel')}</Button>
+                    <Button type="submit" variant="primary">{isEditing ? t('labs.modal.save') : t('labs.modal.add')}</Button>
+                  </div>
+                </form>
+              </Modal>
+            </div>
+          );
+        };
         
         // --- Auth Page Component ---
         const AuthPage = ({ auth, db }) => {
@@ -1296,7 +1470,6 @@
           const createNewUserDocument = async (user) => {
             try {
               const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
-              // Set default role to 'viewer'
               await setDoc(userDocRef, {
                 email: user.email,
                 role: 'viewer' 
@@ -1348,20 +1521,18 @@
           const [auth, setAuth] = useState(null);
           const [currentUser, setCurrentUser] = useState(null);
           const [userRole, setUserRole] = useState(null);
-          const [isAuthReady, setIsAuthReady] = useState(false); // This is the main loading gate
+          const [isAuthReady, setIsAuthReady] = useState(false); 
           const [currentPage, setCurrentPage] = useState('inventory'); 
           const [masterItems, setMasterItems] = useState([]);
           const [masterLoading, setMasterLoading] = useState(true);
           const [masterError, setMasterError] = useState(null);
+          const [labs, setLabs] = useState([]); // New: Labs state
           const [authError, setAuthError] = useState(null);
 
           // Initialize Firebase
           useEffect(() => {
             if (!window.firebase) {
-              console.error("Firebase SDKs not loaded!");
-              setAuthError(t('app.connectionErrorMsg'));
-              setIsAuthReady(true); 
-              return;
+              setAuthError(t('app.connectionErrorMsg')); setIsAuthReady(true); return;
             }
             try {
               const app = initializeApp(firebaseConfig);
@@ -1371,8 +1542,7 @@
               setDb(dbInstance);
             } catch (e) {
               console.error("Error initializing Firebase: ", e);
-              setAuthError(t('app.authError'));
-              setIsAuthReady(true); 
+              setAuthError(t('app.authError')); setIsAuthReady(true); 
             }
           }, [t]);
 
@@ -1393,24 +1563,14 @@
                     // This is a failsafe.
                     // This handles the Super Admin (who created their doc manually)
                     // OR a brand new user who just signed up.
-                    // Let's check if the doc *was* created but isn't readable yet (rare)
-                    // Or, more likely, this is a new sign-up and we need to create their doc.
-                    console.warn("User doc not found for " + user.uid + ". Checking again or creating.");
+                    console.warn("User doc not found for " + user.uid + ". Creating.");
                     try {
-                      // Let's try to create it, just in case.
                       // The 'create' rule allows this.
                       await setDoc(userDocRef, { email: user.email, role: 'viewer' });
                       setUserRole('viewer');
                     } catch(createError) {
-                      // This might fail if the doc *does* exist but we couldn't read it
-                      // (e.g., if rules are still propagating)
-                      // Let's re-read the Super Admin doc just in case.
-                       const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid));
-                       if (adminDoc.exists() && adminDoc.data().role) {
-                         setUserRole(adminDoc.data().role);
-                       } else {
-                         throw createError; // Throw the original creation error
-                       }
+                       console.error("Failed to create user doc: ", createError);
+                       throw createError; // Throw the error
                     }
                   }
                   setCurrentUser(user);
@@ -1422,7 +1582,7 @@
               } catch (e) {
                 console.error("Critical Auth Error: ", e);
                 setAuthError("A critical error occurred while fetching user permissions: " + e.message);
-                setCurrentUser(null); // Log out on critical error
+                setCurrentUser(null); 
                 setUserRole(null);
               } finally {
                 setIsAuthReady(true); // Always set ready
@@ -1434,8 +1594,7 @@
           // Fetch Master List
           useEffect(() => {
             if (!isAuthReady || !db || !currentUser || !userRole) {
-                if (!currentUser) setMasterLoading(false);
-                return;
+                if (!currentUser) setMasterLoading(false); return;
             }
             setMasterLoading(true);
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'masterList');
@@ -1449,7 +1608,21 @@
               setMasterLoading(false);
             });
             return () => unsubscribe();
-          }, [db, isAuthReady, currentUser, userRole, t]); // Added userRole dependency
+          }, [db, isAuthReady, currentUser, userRole, t]);
+          
+          // New: Fetch Labs
+          useEffect(() => {
+            if (!isAuthReady || !db || !currentUser || !userRole) return;
+            
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
+            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+              const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setLabs(items);
+            }, (err) => {
+              console.error("Error fetching labs: ", err);
+            });
+            return () => unsubscribe();
+          }, [db, isAuthReady, currentUser, userRole]);
           
           const handleSignOut = async () => {
             if (auth) {
@@ -1495,6 +1668,13 @@
             }, {});
           }, [masterItems]);
           
+          const labMap = useMemo(() => {
+            return labs.reduce((acc, lab) => {
+              acc[lab.id] = lab;
+              return acc;
+            }, {});
+          }, [labs]);
+          
           // --- Main Render Logic ---
           if (!isAuthReady) {
              return <div id="loading">{t('app.loading')}</div>
@@ -1517,19 +1697,20 @@
              return <div id="loading">{t('app.loadingPermissions')}</div>
           }
 
-          // If we are here, user is logged in AND role is set
           const PageContent = () => {
             switch(currentPage) {
               case 'inventory':
-                return <ActiveInventory db={db} user={currentUser} userRole={userRole} masterItems={masterItems} />;
+                return <ActiveInventory db={db} user={currentUser} userRole={userRole} masterItems={masterItems} labs={labs} labMap={labMap} />;
               case 'master':
                 return <MasterList db={db} user={currentUser} userRole={userRole} masterItems={masterItems} isLoading={masterLoading} error={masterError} />;
               case 'log':
                 return <InventoryLog db={db} masterItemMap={masterItemMap} />;
               case 'admin':
                 return <ManageAccounts db={db} user={currentUser} userRole={userRole} />;
+              case 'labs':
+                return <ManageLabs db={db} user={currentUser} userRole={userRole} />;
               default:
-                return <ActiveInventory db={db} user={currentUser} userRole={userRole} masterItems={masterItems} />;
+                return <ActiveInventory db={db} user={currentUser} userRole={userRole} masterItems={masterItems} labs={labs} labMap={labMap} />;
             }
           };
 
@@ -1547,7 +1728,10 @@
                       <NavButton page="master" label={t('nav.masterList')} icon={<IconEdit />} />
                       <NavButton page="log" label={t('nav.log')} icon={<IconHistory />} />
                       {userRole === 'admin' && (
-                        <NavButton page="admin" label={t('nav.admin')} icon={<IconAdmin />} />
+                        <>
+                          <NavButton page="labs" label={t('nav.labs')} icon={<IconLab />} />
+                          <NavButton page="admin" label={t('nav.admin')} icon={<IconAdmin />} />
+                        </>
                       )}
                     </nav>
                     <div className="flex items-center gap-4">
@@ -1561,12 +1745,15 @@
                     </div>
                   </div>
                   {/* Mobile Nav */}
-                  <nav className="flex md:hidden space-x-2 pb-2 justify-center">
+                  <nav className="flex md:hidden space-x-2 pb-2 justify-center flex-wrap">
                       <NavButton page="inventory" label={t('nav.inventory')} icon={<IconClipboard />} />
                       <NavButton page="master" label={t('nav.masterList')} icon={<IconEdit />} />
                       <NavButton page="log" label={t('nav.log')} icon={<IconHistory />} />
                       {userRole === 'admin' && (
-                        <NavButton page="admin" label={t('nav.admin')} icon={<IconAdmin />} />
+                        <>
+                          <NavButton page="labs" label={t('nav.labs')} icon={<IconLab />} />
+                          <NavButton page="admin" label={t('nav.admin')} icon={<IconAdmin />} />
+                        </>
                       )}
                     </nav>
                 </div>
