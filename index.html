@@ -11,10 +11,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <!-- 3. Load Babel to transpile JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 4. *** NEW: Load Chart.js *** -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 5. Load Firebase SDKs -->
+    <!-- 4. Load Firebase SDKs -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
       import { 
@@ -39,6 +37,9 @@
       };
     </script>
     
+    <!-- 5. *** NEW *** Load Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    
     <!-- 6. Load Google Fonts (Inter for EN, Vazirmatn for FA) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,36 +47,26 @@
     
     <style>
       /* Apply Vazirmatn font when in Farsi */
-      [lang="fa"] body {
-        font-family: 'Vazirmatn', sans-serif;
-      }
+      [lang="fa"] body { font-family: 'Vazirmatn', sans-serif; }
       /* Default font */
-      body { 
-        font-family: 'Inter', sans-serif; 
-      }
+      body { font-family: 'Inter', sans-serif; }
       #loading {
         display: flex; justify-content: center; align-items: center;
         height: 100vh; font-size: 1.2rem; font-weight: 500; color: #333;
       }
-      button:disabled, select:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-      /* Tailwind logical properties for RTL support */
+      button:disabled, select:disabled { cursor: not-allowed; opacity: 0.6; }
+      /* RTL support */
       .text-start { text-align: left; }
       .text-end { text-align: right; }
       [dir="rtl"] .text-start { text-align: right; }
       [dir="rtl"] .text-end { text-align: left; }
-      
       .ms-2 { margin-left: 0.5rem; }
       .me-2 { margin-right: 0.5rem; }
       [dir="rtl"] .ms-2 { margin-left: 0; margin-right: 0.5rem; }
       [dir="rtl"] .me-2 { margin-right: 0; margin-left: 0.5rem; }
-
       .gap-2 { gap: 0.5rem; }
       .gap-3 { gap: 0.75rem; }
       .gap-4 { gap: 1rem; }
-      
       .ps-4 { padding-left: 1rem; }
       .pe-4 { padding-right: 1rem; }
       [dir="rtl"] .ps-4 { padding-left: 0; padding-right: 1rem; }
@@ -88,7 +79,7 @@
         <div id="loading">Connecting to your lab inventory...</div>
     </div>
 
-    <!-- 5. React App Code (transpiled by Babel) -->
+    <!-- 6. React App Code (transpiled by Babel) -->
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } = React;
 
@@ -114,6 +105,8 @@
           getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, 
           onSnapshot, collection, query, setLogLevel, serverTimestamp, orderBy, getDoc
         } = window.firebase.firestore;
+        // NEW: Get Chart.js from window
+        const Chart = window.Chart;
 
         // --- 1. TRANSLATION DICTIONARY ---
         const translations = {
@@ -135,6 +128,17 @@
               admin: "Manage Accounts",
               labs: "Manage Labs"
             },
+            dashboard: { // New
+              title: "Inventory Dashboard",
+              consumptionTitle: "Monthly Consumption (Last 12 Months)",
+              consumptionLabel: "Items Used",
+              statusTitle: "Current Stock by Status",
+              filterLab: "Filter by Lab",
+              filterItem: "Filter by Item",
+              allLabs: "All Labs",
+              allItems: "All Items",
+              noData: "No consumption data found for this period."
+            },
             auth: {
               signInTitle: "Sign in to your account",
               signUpTitle: "Create a new account",
@@ -150,16 +154,6 @@
                 weakPass: "Password is too weak. Must be at least 6 characters.",
                 unknown: "An unknown error occurred. Please try again."
               }
-            },
-            dashboard: { // New
-              title: "Inventory Dashboard",
-              filterByLab: "Filter by Lab",
-              filterByItem: "Filter by Item",
-              allLabs: "All Labs",
-              allItems: "All Items",
-              monthlyTitle: "Monthly Consumption (Items Used)",
-              statusTitle: "Stock by Status",
-              noData: "No data to display for these filters."
             },
             masterList: {
               title: "Master Consumable List",
@@ -196,7 +190,7 @@
               title: "Active Inventory",
               addNew: "Add New Stock",
               noMasterItem: "Please add at least one item to the **Master Consumable List** before adding stock.",
-              noLab: "Please add at least one lab in **Manage Labs** before adding stock.",
+              noLab: "Please add at least one lab in **Manage Labs** before adding stock.", 
               lowStockWarn: "Low Stock Warning",
               lowStockMsg: "Currently {quantity} in stock (threshold is {threshold}).",
               loading: "Loading inventory...",
@@ -205,6 +199,7 @@
                 name: "Item Name",
                 lot: "Lot #",
                 lab: "Lab",
+                received: "Received",
                 expires: "Expires",
                 quantity: "Quantity",
                 location: "Location",
@@ -287,7 +282,7 @@
                 viewer: "Viewer"
               }
             },
-            labs: { 
+            labs: {
               title: "Manage Labs",
               addNew: "Add New Lab",
               loading: "Loading labs...",
@@ -325,6 +320,17 @@
               admin: "مدیریت حساب‌ها",
               labs: "مدیریت آزمایشگاه‌ها"
             },
+            dashboard: { // New
+              title: "داشبورد انبار",
+              consumptionTitle: "مصرف ماهانه (۱۲ ماه گذشته)",
+              consumptionLabel: "موارد مصرف شده",
+              statusTitle: "موجودی فعلی بر اساس وضعیت",
+              filterLab: "فیلتر بر اساس آزمایشگاه",
+              filterItem: "فیلتر بر اساس کالا",
+              allLabs: "همه آزمایشگاه‌ها",
+              allItems: "همه کالاها",
+              noData: "داده‌ای برای این دوره یافت نشد."
+            },
             auth: {
               signInTitle: "ورود به حساب کاربری",
               signUpTitle: "ایجاد حساب کاربری جدید",
@@ -340,16 +346,6 @@
                 weakPass: "رمز عبور ضعیف است. باید حداقل ۶ کاراکتر باشد.",
                 unknown: "خطایی ناشناخته رخ داد. لطفاً دوباره تلاش کنید."
               }
-            },
-            dashboard: { // New
-              title: "داشبورد موجودی",
-              filterByLab: "فیلتر بر اساس آزمایشگاه",
-              filterByItem: "فیلتر بر اساس کالا",
-              allLabs: "همه آزمایشگاه‌ها",
-              allItems: "همه کالاها",
-              monthlyTitle: "مصرف ماهانه (کالاهای برداشت شده)",
-              statusTitle: "موجودی بر اساس وضعیت",
-              noData: "داده‌ای برای نمایش با این فیلترها وجود ندارد."
             },
             masterList: {
               title: "لیست اصلی مواد مصرفی",
@@ -450,7 +446,7 @@
                 action: "عملیات",
                 quantityChange: "تغییر",
                 newQuantity: "موجودی جدید",
-                status: "Status"
+                status: "وضعیت"
               },
               actions: {
                 added: "افزایش موجودی",
@@ -478,7 +474,7 @@
                 viewer: "ناظر"
               }
             },
-            labs: { 
+            labs: {
               title: "مدیریت آزمایشگاه‌ها",
               addNew: "افزودن آزمایشگاه جدید",
               loading: "در حال بارگذاری آزمایشگاه‌ها...",
@@ -631,7 +627,7 @@
         const IconAdmin = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
         const IconGlobe = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>);
         const IconLab = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v7.3a1 1 0 0 1-1.7.7L6 8l-2.3 2.3a1 1 0 0 1-1.7-.7V2"></path><path d="M14 2v7.3a1 1 0 0 0 1.7.7L18 8l2.3 2.3a1 1 0 0 0 1.7-.7V2"></path><path d="M8 22h8"></path><path d="M7 15h10"></path><path d="M10 15v7"></path><path d="M14 15v7"></path></svg>);
-        const IconChart = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>);
+        const IconDashboard = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect><line x1="9" x2="9" y1="3" y2="21"></line><line x1="15" x2="15" y1="3" y2="21"></line><line x1="3" x2="21" y1="9"></line><line x1="3" x2="21" y1="15"></line></svg>);
 
 
         // --- Reusable UI Components ---
@@ -740,7 +736,7 @@
             itemName: `${masterItem.itemId} - ${masterItem.nameAndSpec}`,
             lotNumber: item.lotNumber,
             labId: item.labId || 'N/A', 
-            labName: item.labName || 'N/A',
+            labName: item.labName || 'N/A', 
             action: action, 
             quantityChange: quantityChange,
             newQuantity: newQuantity,
@@ -889,8 +885,11 @@
         };
 
         // --- Active Inventory Component ---
-        const ActiveInventory = ({ db, user, userRole, masterItems, labs, labMap, inventoryItems, isLoading, error }) => {
+        const ActiveInventory = ({ db, user, userRole, masterItems, labs, labMap }) => {
           const { t } = useLang();
+          const [inventoryItems, setInventoryItems] = useState([]);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState(null);
           const [isModalOpen, setIsModalOpen] = useState(false);
           const [isEditing, setIsEditing] = useState(false);
           const [isTakeModalOpen, setIsTakeModalOpen] = useState(false);
@@ -903,14 +902,32 @@
           const statuses = Object.keys(t('inventory.status')).map(key => t(`inventory.status.${key}`));
           const canManage = ['admin', 'technician'].includes(userRole);
 
-          // Use the populated inventory from props
+          const masterItemMap = useMemo(() => {
+            return masterItems.reduce((acc, item) => {
+              acc[item.id] = item;
+              return acc;
+            }, {});
+          }, [masterItems]);
+          
           const populatedInventory = useMemo(() => {
             return inventoryItems.map(item => ({
               ...item,
-              masterItem: masterItems[item.masterItemId] || { itemId: 'N/A', nameAndSpec: 'N/A' },
+              masterItem: masterItemMap[item.masterItemId] || { itemId: 'N/A', nameAndSpec: 'N/A' },
               labName: labMap[item.labId]?.name || 'N/A'
             }))
-          }, [inventoryItems, masterItems, labMap]);
+          }, [inventoryItems, masterItemMap, labMap]);
+
+          useEffect(() => {
+            if (!db) return;
+            setIsLoading(true);
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
+            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+              const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setInventoryItems(items);
+              setIsLoading(false);
+            }, (err) => { console.error("Error fetching inventory: ", err); setError(t('inventory.error')); setIsLoading(false); });
+            return () => unsubscribe();
+          }, [db, user.uid, t]);
 
           const resetForm = () => {
             setForm({
@@ -951,7 +968,7 @@
               const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
               const itemForLog = {
                  ...form,
-                 masterItem: masterItems[form.masterItemId], // Use masterItems map
+                 masterItem: masterItemMap[form.masterItemId],
                  labName: labMap[form.labId]?.name || 'N/A'
               };
               
@@ -999,7 +1016,7 @@
           
           const handleStatusChange = async (docId, newStatus) => {
             if (!db || !user || !canManage) return;
-            const item = populatedInventory.find(i => i.id === docId);
+            const item = populatedInventory.find(i => i.id === docId); 
             if (!item) return;
             try {
               await logChange(db, user, item, "status", 0, item.quantity, newStatus);
@@ -1155,9 +1172,9 @@
         };
 
         // --- Inventory Log Component ---
-        const InventoryLog = ({ db, logItems, isLoading, error }) => {
+        const InventoryLog = ({ logItems, isLoading, error }) => { // Receives logItems as prop
           const { t } = useLang();
-          
+
           const handleExport = () => {
              const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'labName', 'action', 'quantityChange', 'newQuantity', 'status'];
             exportToCSV(logItems, headers, 'inventory-log.csv', t);
@@ -1186,7 +1203,7 @@
               </div>
               
               {isLoading && <p>{t('log.loading')}</p>}
-              {error && <p className="text-red-500">{t('log.error')}</p>}
+              {error && <p className="text-red-500">{error}</p>}
 
               <div className="bg-white shadow-md rounded-lg overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 text-start">
@@ -1242,7 +1259,8 @@
 
           useEffect(() => {
             if (!db || userRole !== 'admin') {
-              setIsLoading(false); return;
+              setIsLoading(false);
+              return;
             };
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
             const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
@@ -1308,31 +1326,35 @@
         };
         
         // --- Manage Labs Component ---
-        const ManageLabs = ({ db, user, userRole, labs, isLoading, error }) => {
+        const ManageLabs = ({ db, user, userRole }) => {
           const { t } = useLang();
+          const [labs, setLabs] = useState([]);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState(null);
           const [isModalOpen, setIsModalOpen] = useState(false);
           const [isEditing, setIsEditing] = useState(false);
           const [currentLab, setCurrentLab] = useState(null);
           const [labName, setLabName] = useState('');
 
-          const resetForm = () => {
-            setIsEditing(false);
-            setCurrentLab(null);
-            setLabName('');
-          };
-          const closeModal = () => {
-            setIsModalOpen(false);
-            resetForm();
-          };
-          const openAddModal = () => {
-            resetForm();
-            setIsModalOpen(true);
-          };
+          useEffect(() => {
+            if (!db || userRole !== 'admin') {
+              setIsLoading(false);
+              return;
+            };
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
+            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+              const labList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setLabs(labList);
+              setIsLoading(false);
+            }, (err) => { console.error("Error fetching labs: ", err); setError(t('labs.error')); setIsLoading(false); });
+            return () => unsubscribe();
+          }, [db, userRole, t]);
+
+          const resetForm = () => { setIsEditing(false); setCurrentLab(null); setLabName(''); };
+          const closeModal = () => { setIsModalOpen(false); resetForm(); };
+          const openAddModal = () => { resetForm(); setIsModalOpen(true); };
           const openEditModal = (lab) => {
-            setIsEditing(true);
-            setCurrentLab(lab);
-            setLabName(lab.name);
-            setIsModalOpen(true);
+            setIsEditing(true); setCurrentLab(lab); setLabName(lab.name); setIsModalOpen(true);
           };
 
           const handleSubmit = async (e) => {
@@ -1409,191 +1431,208 @@
         };
         
         // --- NEW: Dashboard Component ---
-        const Dashboard = ({ inventoryItems, logItems, masterItems, labs, labMap }) => {
+        const Dashboard = ({ logItems, masterItems, labs, inventoryItems }) => {
           const { t, language } = useLang();
           const [selectedLab, setSelectedLab] = useState('all');
           const [selectedItem, setSelectedItem] = useState('all');
           
-          const barChartRef = useRef(null);
-          const pieChartRef = useRef(null);
-          const chartInstances = useRef({});
+          const consumptionChartRef = useRef(null);
+          const statusChartRef = useRef(null);
 
-          // 1. Process data for charts
-          const chartData = useMemo(() => {
-            const locale = language === 'fa' ? 'fa-IR' : 'en-US';
-            const calendar = locale === 'fa-IR' ? 'persian' : 'gregory';
-
-            // --- Filter data based on dropdowns ---
+          // 1. Memoized Data for Monthly Consumption Chart
+          const consumptionData = useMemo(() => {
+            const actionToTrack = translations.en.log.actions.used;
+            
+            // Get last 12 months labels (e.g., "2025-11", "2025-10"...)
+            const labels = [];
+            const data = {};
+            const today = new Date();
+            for (let i = 0; i < 12; i++) {
+              const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+              const key = d.toISOString().substring(0, 7); // "YYYY-MM"
+              labels.push(key);
+              data[key] = 0;
+            }
+            labels.reverse(); // Oldest to newest
+            
             const filteredLogs = logItems.filter(item => {
-              const isUsedAction = item.action === translations.en.log.actions.used;
+              const isUsedAction = item.action === actionToTrack;
               const labMatch = selectedLab === 'all' || item.labId === selectedLab;
               const itemMatch = selectedItem === 'all' || item.masterItemId === selectedItem;
               return isUsedAction && labMatch && itemMatch;
             });
-
-            const filteredInventory = inventoryItems.filter(item => {
-              const labMatch = selectedLab === 'all' || item.labId === selectedLab;
-              const itemMatch = selectedItem === 'all' || item.masterItemId === selectedItem;
-              return labMatch && itemMatch;
-            });
-
-            // --- Monthly Consumption Data ---
-            const months = [...Array(12).keys()].map(i => {
-                const date = new Date(2023, i, 1); // Use a non-leap year
-                return date.toLocaleString(locale, { month: 'short', calendar: calendar });
-            });
-            const monthlyCounts = new Array(12).fill(0);
             
             filteredLogs.forEach(item => {
               if (item.timestamp && item.timestamp.toDate) {
-                const monthIndex = item.timestamp.toDate().getMonth(); // 0-11
-                monthlyCounts[monthIndex] += Math.abs(item.quantityChange || 0);
+                const key = item.timestamp.toDate().toISOString().substring(0, 7);
+                if (data[key] !== undefined) {
+                  data[key] += Math.abs(item.quantityChange || 0);
+                }
               }
             });
-
-            // --- Stock by Status Data ---
-            const statusCounts = filteredInventory.reduce((acc, item) => {
-              const status = item.status || 'N/A';
-              acc[status] = (acc[status] || 0) + 1; // Count by lot
-              return acc;
-            }, {});
             
-            const pieLabels = Object.keys(statusCounts).map(statusKey => {
-               const key = Object.keys(translations.en.inventory.status).find(k => translations.en.inventory.status[k] === statusKey);
-               return t(`inventory.status.${key}`) || statusKey;
+            return {
+              labels,
+              datasets: [{
+                label: t('dashboard.consumptionLabel'),
+                data: labels.map(key => data[key]),
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 1
+              }]
+            };
+          }, [logItems, selectedLab, selectedItem, t]);
+
+          // 2. Memoized Data for Status Pie Chart
+          const statusData = useMemo(() => {
+            const statusCounts = {};
+            const statusColors = {};
+            const approvedKey = t('inventory.status.approved');
+            const expiredKey = t('inventory.status.expired');
+            const quarantinedKey = t('inventory.status.quarantined');
+            const disposedKey = t('inventory.status.disposed');
+            
+            statusCounts[approvedKey] = 0;
+            statusCounts[expiredKey] = 0;
+            statusCounts[quarantinedKey] = 0;
+            statusCounts[disposedKey] = 0;
+            
+            statusColors[approvedKey] = 'rgba(34, 197, 94, 0.7)'; // Green
+            statusColors[expiredKey] = 'rgba(239, 68, 68, 0.7)'; // Red
+            statusColors[quarantinedKey] = 'rgba(234, 179, 8, 0.7)'; // Yellow
+            statusColors[disposedKey] = 'rgba(107, 114, 128, 0.7)'; // Gray
+            
+            inventoryItems.forEach(item => {
+              const isExpired = item.expirationDate && new Date(item.expirationDate) < new Date();
+              let status = item.status;
+              if (isExpired && status !== disposedKey) {
+                status = expiredKey;
+              }
+              if (statusCounts[status] !== undefined) {
+                statusCounts[status] += item.quantity;
+              }
             });
-            const pieData = Object.values(statusCounts);
 
             return {
-              monthly: {
-                labels: months,
-                data: monthlyCounts
-              },
-              status: {
-                labels: pieLabels,
-                data: pieData
+              labels: Object.keys(statusCounts),
+              datasets: [{
+                data: Object.values(statusCounts),
+                backgroundColor: Object.values(statusColors)
+              }]
+            };
+          }, [inventoryItems, t]);
+
+          // Render Consumption Chart
+          useEffect(() => {
+            const ctx = document.getElementById('consumptionChart');
+            if (!ctx) return;
+            
+            if (consumptionChartRef.current) {
+              consumptionChartRef.current.destroy();
+            }
+            
+            consumptionChartRef.current = new Chart(ctx, {
+              type: 'bar',
+              data: consumptionData,
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: { beginAtZero: true, title: { display: true, text: t('dashboard.consumptionLabel') } },
+                  x: { title: { display: true, text: language === 'fa' ? 'ماه' : 'Month' } }
+                },
+                plugins: {
+                  legend: { display: false },
+                  title: { display: true, text: t('dashboard.consumptionTitle'), font: { size: 18 } }
+                }
+              }
+            });
+            
+            return () => {
+              if (consumptionChartRef.current) {
+                consumptionChartRef.current.destroy();
               }
             };
-            
-          }, [inventoryItems, logItems, masterItems, labs, selectedLab, selectedItem, t, language]);
+          }, [consumptionData, t, language]);
           
-          // 2. Render charts
+          // Render Status Chart
           useEffect(() => {
-            if (!window.Chart) return;
+            const ctx = document.getElementById('statusChart');
+            if (!ctx) return;
             
-            // Destroy previous charts
-            if (chartInstances.current.bar) chartInstances.current.bar.destroy();
-            if (chartInstances.current.pie) chartInstances.current.pie.destroy();
-            
-            // --- Bar Chart (Monthly) ---
-            if (barChartRef.current && chartData.monthly.data.some(d => d > 0)) {
-              const barCtx = barChartRef.current.getContext('2d');
-              chartInstances.current.bar = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                  labels: chartData.monthly.labels,
-                  datasets: [{
-                    label: t('dashboard.monthlyTitle'),
-                    data: chartData.monthly.data,
-                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    borderWidth: 1
-                  }]
-                },
-                options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-                  plugins: { legend: { display: false } }
-                }
-              });
+            if (statusChartRef.current) {
+              statusChartRef.current.destroy();
             }
             
-            // --- Pie Chart (Status) ---
-            if (pieChartRef.current && chartData.status.data.length > 0) {
-              const pieCtx = pieChartRef.current.getContext('2d');
-              chartInstances.current.pie = new Chart(pieCtx, {
-                type: 'pie',
-                data: {
-                  labels: chartData.status.labels,
-                  datasets: [{
-                    data: chartData.status.data,
-                    backgroundColor: [
-                      'rgba(34, 197, 94, 0.7)', // Green (Approved)
-                      'rgba(234, 179, 8, 0.7)', // Yellow (Quarantined)
-                      'rgba(239, 68, 68, 0.7)', // Red (Expired)
-                      'rgba(156, 163, 175, 0.7)' // Gray (Disposed)
-                    ],
-                  }]
-                },
-                options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { position: 'top' } }
+            statusChartRef.current = new Chart(ctx, {
+              type: 'pie',
+              data: statusData,
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: language === 'fa' ? 'left' : 'right' },
+                  title: { display: true, text: t('dashboard.statusTitle'), font: { size: 18 } }
                 }
-              });
-            }
+              }
+            });
             
-            // Cleanup on unmount
             return () => {
-              if (chartInstances.current.bar) chartInstances.current.bar.destroy();
-              if (chartInstances.current.pie) chartInstances.current.pie.destroy();
-            }
-
-          }, [chartData, t]); // Re-render when data or language changes
+              if (statusChartRef.current) {
+                statusChartRef.current.destroy();
+              }
+            };
+          }, [statusData, t, language]);
 
           return (
             <div className="p-4 space-y-6">
               <h2 className="text-2xl font-semibold text-gray-800">{t('dashboard.title')}</h2>
               
-              {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow-sm">
-                <Select
-                  label={t('dashboard.filterByLab')}
-                  id="labFilter"
-                  value={selectedLab}
-                  onChange={(e) => setSelectedLab(e.target.value)}
-                >
-                  <option value="all">{t('dashboard.allLabs')}</option>
-                  {labs.map(lab => <option key={lab.id} value={lab.id}>{lab.name}</option>)}
-                </Select>
-                <Select
-                  label={t('dashboard.filterByItem')}
-                  id="itemFilter"
-                  value={selectedItem}
-                  onChange={(e) => setSelectedItem(e.target.value)}
-                >
-                  <option value="all">{t('dashboard.allItems')}</option>
-                  {masterItems.map(item => <option key={item.id} value={item.id}>{item.itemId} - {item.nameAndSpec}</option>)}
-                </Select>
+              {/* Consumption Chart Card */}
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.consumptionTitle')}</h3>
+                {/* Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Select
+                    label={t('dashboard.filterLab')}
+                    id="labFilter"
+                    value={selectedLab}
+                    onChange={(e) => setSelectedLab(e.target.value)}
+                  >
+                    <option value="all">{t('dashboard.allLabs')}</option>
+                    {labs.map(lab => (
+                      <option key={lab.id} value={lab.id}>{lab.name}</option>
+                    ))}
+                  </Select>
+                  <Select
+                    label={t('dashboard.filterItem')}
+                    id="itemFilter"
+                    value={selectedItem}
+                    onChange={(e) => setSelectedItem(e.target.value)}
+                  >
+                    <option value="all">{t('dashboard.allItems')}</option>
+                    {masterItems.map(item => (
+                      <option key={item.id} value={item.id}>{item.itemId} - {item.nameAndSpec}</option>
+                    ))}
+                  </Select>
+                </div>
+                {/* Chart Canvas */}
+                <div className="relative h-96">
+                  <canvas id="consumptionChart"></canvas>
+                </div>
               </div>
               
-              {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                {/* Monthly Consumption */}
-                <div className="lg:col-span-3 bg-white p-6 rounded-lg shadow-sm h-96">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.monthlyTitle')}</h3>
-                  {chartData.monthly.data.some(d => d > 0) ? (
-                    <div className="relative h-72">
-                      <canvas ref={barChartRef}></canvas>
-                    </div>
-                  ) : <p className="text-gray-500">{t('dashboard.noData')}</p>}
-                </div>
-                
-                {/* Stock by Status */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm h-96">
-                   <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.statusTitle')}</h3>
-                   {chartData.status.data.length > 0 ? (
-                    <div className="relative h-72">
-                      <canvas ref={pieChartRef}></canvas>
-                    </div>
-                   ) : <p className="text-gray-500">{t('dashboard.noData')}</p>}
+              {/* Status Chart Card */}
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">{t('dashboard.statusTitle')}</h3>
+                <div className="relative h-80">
+                  <canvas id="statusChart"></canvas>
                 </div>
               </div>
+              
             </div>
           );
         };
-        
         
         // --- Auth Page Component ---
         const AuthPage = ({ auth, db }) => {
@@ -1671,24 +1710,14 @@
           const [userRole, setUserRole] = useState(null);
           const [isAuthReady, setIsAuthReady] = useState(false); 
           const [currentPage, setCurrentPage] = useState('dashboard'); // Default to dashboard
-          
-          // --- Lifted State ---
           const [masterItems, setMasterItems] = useState([]);
           const [masterLoading, setMasterLoading] = useState(true);
           const [masterError, setMasterError] = useState(null);
-          
           const [labs, setLabs] = useState([]);
-          const [labsLoading, setLabsLoading] = useState(true);
-          const [labsError, setLabsError] = useState(null);
-          
-          const [inventoryItems, setInventoryItems] = useState([]);
-          const [inventoryLoading, setInventoryLoading] = useState(true);
-          const [inventoryError, setInventoryError] = useState(null);
-          
-          const [logItems, setLogItems] = useState([]);
+          const [inventoryItems, setInventoryItems] = useState([]); // New: For status chart
+          const [logItems, setLogItems] = useState([]); // New: For consumption chart
           const [logLoading, setLogLoading] = useState(true);
           const [logError, setLogError] = useState(null);
-          
           const [authError, setAuthError] = useState(null);
 
           // Initialize Firebase
@@ -1740,56 +1769,47 @@
                 setCurrentUser(null); 
                 setUserRole(null);
               } finally {
-                setIsAuthReady(true);
+                setIsAuthReady(true); 
               }
             });
             return () => unsubscribe();
           }, [auth, db]);
 
-          // --- Data Fetching (Lifted State) ---
-          
           // Fetch Master List
           useEffect(() => {
-            if (!db || !userRole) { setMasterLoading(false); return; }
+            if (!isAuthReady || !db || !currentUser || !userRole) {
+                if (!currentUser) setMasterLoading(false); return;
+            }
             setMasterLoading(true);
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'masterList');
             const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
               const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setMasterItems(items);
               setMasterLoading(false);
-            }, (err) => { setMasterError(t('masterList.error')); setMasterLoading(false); });
+            }, (err) => {
+              console.error("Error fetching master list: ", err);
+              setMasterError(t('masterList.error'));
+              setMasterLoading(false);
+            });
             return () => unsubscribe();
-          }, [db, userRole, t]);
+          }, [db, isAuthReady, currentUser, userRole, t]);
           
           // Fetch Labs
           useEffect(() => {
-            if (!db || !userRole) { setLabsLoading(false); return; }
-            setLabsLoading(true);
+            if (!isAuthReady || !db || !currentUser || !userRole) return;
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
             const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
               const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setLabs(items);
-              setLabsLoading(false);
-            }, (err) => { setLabsError(t('labs.error')); setLabsLoading(false); });
+            }, (err) => { console.error("Error fetching labs: ", err); });
             return () => unsubscribe();
-          }, [db, userRole, t]);
+          }, [db, isAuthReady, currentUser, userRole]);
           
-          // Fetch Active Inventory
+          // New: Fetch Inventory Log (for Dashboard)
           useEffect(() => {
-            if (!db || !userRole) { setInventoryLoading(false); return; }
-            setInventoryLoading(true);
-            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
-            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-              const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-              setInventoryItems(items);
-              setInventoryLoading(false);
-            }, (err) => { setInventoryError(t('inventory.error')); setInventoryLoading(false); });
-            return () => unsubscribe();
-          }, [db, userRole, t]);
-          
-          // Fetch Inventory Log
-          useEffect(() => {
-            if (!db || !userRole) { setLogLoading(false); return; }
+            if (!isAuthReady || !db || !currentUser || !userRole) {
+              if (!currentUser) setLogLoading(false); return;
+            }
             setLogLoading(true);
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventoryLog');
             const q = query(collectionRef, orderBy('timestamp', 'desc')); 
@@ -1797,9 +1817,24 @@
               const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setLogItems(items);
               setLogLoading(false);
-            }, (err) => { setLogError(t('log.error')); setLogLoading(false); });
+            }, (err) => {
+              console.error("Error fetching log: ", err);
+              setLogError(t('log.error'));
+              setLogLoading(false);
+            });
             return () => unsubscribe();
-          }, [db, userRole, t]);
+          }, [db, isAuthReady, currentUser, userRole, t]);
+          
+          // New: Fetch Active Inventory (for Dashboard)
+          useEffect(() => {
+            if (!isAuthReady || !db || !currentUser || !userRole) return;
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
+            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+              const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setInventoryItems(items);
+            }, (err) => { console.error("Error fetching inventory: ", err); });
+            return () => unsubscribe();
+          }, [db, isAuthReady, currentUser, userRole]);
           
           
           const handleSignOut = async () => {
@@ -1878,43 +1913,28 @@
             switch(currentPage) {
               case 'dashboard':
                 return <Dashboard 
-                          inventoryItems={inventoryItems} 
                           logItems={logItems} 
+                          inventoryItems={inventoryItems}
                           masterItems={masterItems} 
                           labs={labs} 
-                          labMap={labMap}
-                       />;
+                        />;
               case 'inventory':
-                return <ActiveInventory 
-                          db={db} user={currentUser} userRole={userRole} 
-                          masterItems={masterItemMap} labs={labs} labMap={labMap} 
-                          inventoryItems={inventoryItems} isLoading={inventoryLoading} error={inventoryError} 
-                       />;
+                return <ActiveInventory db={db} user={currentUser} userRole={userRole} masterItems={masterItems} labs={labs} labMap={labMap} />;
               case 'master':
-                return <MasterList 
-                          db={db} user={currentUser} userRole={userRole} 
-                          masterItems={masterItems} isLoading={masterLoading} error={masterError} 
-                       />;
+                return <MasterList db={db} user={currentUser} userRole={userRole} masterItems={masterItems} isLoading={masterLoading} error={masterError} />;
               case 'log':
-                return <InventoryLog 
-                          db={db} 
-                          logItems={logItems} isLoading={logLoading} error={logError} 
-                       />;
+                return <InventoryLog logItems={logItems} isLoading={logLoading} error={logError} />;
               case 'admin':
                 return <ManageAccounts db={db} user={currentUser} userRole={userRole} />;
               case 'labs':
-                return <ManageLabs 
-                          db={db} user={currentUser} userRole={userRole} 
-                          labs={labs} isLoading={labsLoading} error={labsError} 
-                       />;
+                return <ManageLabs db={db} user={currentUser} userRole={userRole} />;
               default:
                 return <Dashboard 
-                          inventoryItems={inventoryItems} 
                           logItems={logItems} 
+                          inventoryItems={inventoryItems}
                           masterItems={masterItems} 
                           labs={labs} 
-                          labMap={labMap}
-                       />;
+                        />;
             }
           };
 
@@ -1928,7 +1948,7 @@
                       <h1 className="text-xl font-semibold text-gray-900">{t('app.title')}</h1>
                     </div>
                     <nav className="hidden md:flex space-x-2">
-                      <NavButton page="dashboard" label={t('nav.dashboard')} icon={<IconChart />} />
+                      <NavButton page="dashboard" label={t('nav.dashboard')} icon={<IconDashboard />} />
                       <NavButton page="inventory" label={t('nav.inventory')} icon={<IconClipboard />} />
                       <NavButton page="master" label={t('nav.masterList')} icon={<IconEdit />} />
                       <NavButton page="log" label={t('nav.log')} icon={<IconHistory />} />
@@ -1951,7 +1971,7 @@
                   </div>
                   {/* Mobile Nav */}
                   <nav className="flex md:hidden space-x-2 pb-2 justify-center flex-wrap">
-                      <NavButton page="dashboard" label={t('nav.dashboard')} icon={<IconChart />} />
+                      <NavButton page="dashboard" label={t('nav.dashboard')} icon={<IconDashboard />} />
                       <NavButton page="inventory" label={t('nav.inventory')} icon={<IconClipboard />} />
                       <NavButton page="master" label={t('nav.masterList')} icon={<IconEdit />} />
                       <NavButton page="log" label={t('nav.log')} icon={<IconHistory />} />
@@ -1973,8 +1993,7 @@
 
         // 6. Render the App, wrapped in the Language Provider
         const checkFirebase = setInterval(() => {
-          // Also check for Chart.js
-          if (window.firebase && window.Chart) {
+          if (window.firebase && window.Chart) { // Wait for both Firebase and Chart.js
             clearInterval(checkFirebase);
             const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(
