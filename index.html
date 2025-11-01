@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Inventory Manager (cons-593c6)</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Load React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- 3. Load Babel to transpile JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 4. Load Firebase SDKs -->
+    <script type="module">
+      // This is a workaround to make Firebase SDKs available to the Babel script
+      // by attaching them to the window object.
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { 
+        getFirestore, 
+        doc, 
+        addDoc, 
+        setDoc, 
+        updateDoc, 
+        deleteDoc, 
+        onSnapshot, 
+        collection, 
+        query, 
+        setLogLevel,
+        serverTimestamp,
+        orderBy 
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+      window.firebase = {
+        app: { initializeApp },
+        auth: { getAuth, signInAnonymously, onAuthStateChanged },
+        firestore: {
+          getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, 
+          collection, query, setLogLevel, serverTimestamp, orderBy
+        }
+      };
+    </script>
+    
+    <style>
+      body { font-family: 'Inter', sans-serif; }
+      #loading {
+        display: flex; justify-content: center; align-items: center;
+        height: 100vh; font-size: 1.2rem; font-weight: 500; color: #333;
+      }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <div id="root">
+        <div id="loading">Connecting to your lab inventory...</div>
+    </div>
+
+    <!-- 5. React App Code (transpiled by Babel) -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        // --- Firebase Configuration ---
+        // These are YOUR private keys that you provided.
+        const firebaseConfig = {
+          apiKey: "AIzaSyACGODYoAc5Yc7dzX8aYlX8t-UhPUyy9oM",
+          authDomain: "cons-593c6.firebaseapp.com",
+          projectId: "cons-593c6",
+          storageBucket: "cons-593c6.firebasestorage.app",
+          messagingSenderId: "674188672813",
+          appId: "1:674188672813:web:887caed5ea2fc927fbdda4",
+          measurementId: "G-TK88H80GYC"
+        };
+        
+        // This is your project's unique ID
+        const appId = "cons-593c6"; 
+        
+        // --- Destructure Firebase from window ---
+        const { initializeApp } = window.firebase.app;
+        const { getAuth, signInAnonymously, onAuthStateChanged } = window.firebase.auth;
+        const { 
+          getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, 
+          onSnapshot, collection, query, setLogLevel, serverTimestamp, orderBy 
+        } = window.firebase.firestore;
+
+
+        // --- Helper Functions & Constants ---
+        const formatDate = (dateInput, includeTime = false) => {
+          if (!dateInput) return 'N/A';
+          let date;
+          if (dateInput && dateInput.toDate) {
+            date = dateInput.toDate();
+          } else if (typeof dateInput === 'string') {
+            date = new Date(dateInput);
+          } else {
+            date = dateInput;
+          }
+          
+          if (!date || isNaN(date.getTime())) {
+            return 'N/A';
+          }
+          
+          const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+          const timeOptions = { hour: '2-digit', minute: '2-digit' };
+
+          if (includeTime) {
+            return date.toLocaleString('en-US', {...dateOptions, ...timeOptions});
+          }
+          return date.toLocaleDateString('en-US', dateOptions);
+        };
+
+        // --- Inline SVG Icons ---
+        const IconPlus = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        );
+
+        const IconTrash = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        );
+
+        const IconEdit = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"></path>
+          </svg>
+        );
+        
+        const IconClipboard = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          </svg>
+        );
+
+        const IconHistory = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 4v6h6"></path>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+        );
+
+        const IconX = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        );
+
+        const IconAlertTriangle = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 inline-block mr-1">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        );
+
+        // --- Reusable UI Components ---
+        const Modal = ({ isOpen, onClose, title, children, allowClose = true }) => {
+          if (!isOpen) return null;
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" aria-modal="true" role="dialog">
+              <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-xl m-4">
+                <div className="flex items-center justify-between p-4 border-b rounded-t">
+                  <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+                  {allowClose && (
+                    <button type="button" className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center" onClick={onClose} aria-label="Close modal">
+                      <IconX />
+                    </button>
+                  )}
+                </div>
+                <div className="p-6 space-y-6">{children}</div>
+              </div>
+            </div>
+          );
+        };
+        
+        // New Modal for User Name
+        const UserNameModal = ({ isOpen, onSave }) => {
+          const [name, setName] = useState('');
+
+          const handleSubmit = (e) => {
+            e.preventDefault();
+            if (name.trim()) {
+              onSave(name.trim());
+            }
+          };
+
+          return (
+            <Modal isOpen={isOpen} title="Welcome!" allowClose={false}>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input 
+                  label="Please enter your Name or Initials for the audit log:" 
+                  id="userName" 
+                  name="userName" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  required 
+                  autoFocus
+                />
+                <div className="flex justify-end pt-4 border-t">
+                  <Button type="submit" variant="primary">Save and Continue</Button>
+                </div>
+              </form>
+            </Modal>
+          );
+        };
+
+
+        const Input = ({ label, id, ...props }) => (
+          <div>
+            <label htmlFor={id} className="block mb-2 text-sm font-medium text-gray-900">{label}</label>
+            <input id={id} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" {...props} />
+          </div>
+        );
+
+        const Select = ({ label, id, children, ...props }) => (
+          <div>
+            <label htmlFor={id} className="block mb-2 text-sm font-medium text-gray-900">{label}</label>
+            <select id={id} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" {...props}>
+              {children}
+            </select>
+          </div>
+        );
+
+        const Button = ({ children, onClick, variant = 'primary', type = 'button', ...props }) => {
+          const baseStyle = "px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-2 transition-colors";
+          const variants = {
+            primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+            danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+            secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400',
+          };
+          return (
+            <button type={type} onClick={onClick} className={`${baseStyle} ${variants[variant]}`} {...props}>
+              {children}
+            </button>
+          );
+        };
+
+        // --- Log Helper Function ---
+        const logChange = async (db, userId, userName, item, action, quantityChange, newQuantity, newStatus = null) => {
+          if (!db || !appId || !userId || !userName) {
+            console.error("Log failed: DB, AppID, UserID, or UserName missing.");
+            return;
+          }
+          
+          const logCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventoryLog');
+          
+          const masterItem = item.masterItem || { itemId: 'N/A', nameAndSpec: 'N/A' };
+
+          const logEntry = {
+            timestamp: serverTimestamp(),
+            userId: userId, 
+            userName: userName, // Added user name
+            inventoryItemId: item.id || 'N/A',
+            masterItemId: item.masterItemId,
+            itemName: `${masterItem.itemId} - ${masterItem.nameAndSpec}`,
+            lotNumber: item.lotNumber,
+            action: action,
+            quantityChange: quantityChange,
+            newQuantity: newQuantity,
+            status: newStatus || item.status,
+          };
+          
+          try {
+            await addDoc(logCollectionRef, logEntry);
+          } catch (err) {
+            console.error("Error writing to log: ", err);
+          }
+        };
+
+
+        // --- Master List Component ---
+        const MasterList = ({ db, userId, masterItems, isLoading, error }) => {
+          const [isModalOpen, setIsModalOpen] = useState(false);
+          const [isEditing, setIsEditing] = useState(false);
+          const [currentItemId, setCurrentItemId] = useState(null);
+          const [form, setForm] = useState({
+            itemId: '',
+            category: 'Sample Prep',
+            nameAndSpec: '',
+            approvedSuppliers: '',
+            verificationAction: '',
+            lowStockThreshold: 3,
+          });
+
+          const categories = ['Sample Prep', 'Chemical Analysis', 'General Lab'];
+
+          const resetForm = () => {
+            setForm({
+              itemId: '',
+              category: 'Sample Prep',
+              nameAndSpec: '',
+              approvedSuppliers: '',
+              verificationAction: '',
+              lowStockThreshold: 3,
+            });
+            setIsEditing(false);
+            setCurrentItemId(null);
+          };
+
+          const openAddModal = () => {
+            resetForm();
+            setIsModalOpen(true);
+          };
+
+          const openEditModal = (item) => {
+            setForm({
+              itemId: item.itemId,
+              category: item.category,
+              nameAndSpec: item.nameAndSpec,
+              approvedSuppliers: item.approvedSuppliers,
+              verificationAction: item.verificationAction,
+              lowStockThreshold: item.lowStockThreshold || 3,
+            });
+            setIsEditing(true);
+            setCurrentItemId(item.id);
+            setIsModalOpen(true);
+          };
+
+          const closeModal = () => {
+            setIsModalOpen(false);
+            resetForm();
+          };
+
+          const handleChange = (e) => {
+            const { name, value, type } = e.target;
+            setForm((prev) => ({ 
+              ...prev, 
+              [name]: type === 'number' ? Number(value) : value 
+            }));
+          };
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            if (!db) return;
+
+            try {
+              const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'masterList');
+              if (isEditing) {
+                const docRef = doc(collectionRef, currentItemId);
+                await setDoc(docRef, form);
+              } else {
+                await addDoc(collectionRef, form);
+              }
+              closeModal();
+            } catch (err) {
+              console.error("Error saving master item: ", err);
+            }
+          };
+
+          const handleDelete = async (docId) => {
+            if (!window.confirm("Are you sure you want to delete this master item?")) return;
+            
+            if (!db) return;
+            try {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'masterList', docId);
+              await deleteDoc(docRef);
+            } catch (err) {
+              console.error("Error deleting item: ", err);
+            }
+          };
+
+          return (
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-800">Master Consumable List</h2>
+                <Button onClick={openAddModal} variant="primary">
+                  <IconPlus /> Add New Master Item
+                </Button>
+              </div>
+
+              {isLoading && <p>Loading master list...</p>}
+              {error && <p className="text-red-500">{error}</p>}
+              
+              <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item ID</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name & Specification</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved Suppliers</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verification</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Low Stock</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {masterItems.map((item) => (
+                      <tr key={item.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemId}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.category}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.nameAndSpec}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.approvedSuppliers}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.verificationAction}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lowStockThreshold || 3}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="secondary" onClick={() => openEditModal(item)} aria-label="Edit"><IconEdit /></Button>
+                            <Button variant="danger" onClick={() => handleDelete(item.id)} aria-label="Delete"><IconTrash /></Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <Modal isOpen={isModalOpen} onClose={closeModal} title={isEditing ? "Edit Master Item" : "Add New Master Item"} allowClose={true}>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <Input label="Item ID (e.g., SP-001)" id="itemId" name="itemId" value={form.itemId} onChange={handleChange} required />
+                  <Select label="Category" id="category" name="category" value={form.category} onChange={handleChange}>
+                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </Select>
+                  <Input label="Name & Specification" id="nameAndSpec" name="nameAndSpec" value={form.nameAndSpec} onChange={handleChange} required />
+                  <Input label="Approved Suppliers" id="approvedSuppliers" name="approvedSuppliers" value={form.approvedSuppliers} onChange={handleChange} />
+                  <Input label="Acceptance / Verification Action" id="verificationAction" name="verificationAction" value={form.verificationAction} onChange={handleChange} />
+                  <Input label="Low Stock Threshold" id="lowStockThreshold" name="lowStockThreshold" type="number" min="0" value={form.lowStockThreshold} onChange={handleChange} />
+                  <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
+                    <Button type="submit" variant="primary">{isEditing ? "Save Changes" : "Add Item"}</Button>
+                  </div>
+                </form>
+              </Modal>
+            </div>
+          );
+        };
+
+        // --- Active Inventory Component ---
+        const ActiveInventory = ({ db, userId, userName, masterItems }) => {
+          const [inventoryItems, setInventoryItems] = useState([]);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState(null);
+          
+          const [isModalOpen, setIsModalOpen] = useState(false);
+          const [isEditing, setIsEditing] = useState(false);
+          const [currentItem, setCurrentItem] = useState(null); 
+          
+          const [form, setForm] = useState({
+            masterItemId: '',
+            lotNumber: '',
+            dateReceived: '',
+            expirationDate: '',
+            quantity: 1,
+            storageLocation: '',
+            status: 'Approved for Use',
+          });
+          
+          const statuses = ['Approved for Use', 'Quarantined', 'Disposed', 'Expired'];
+
+          const masterItemMap = useMemo(() => {
+            return masterItems.reduce((acc, item) => {
+              acc[item.id] = item;
+              return acc;
+            }, {});
+          }, [masterItems]);
+
+          // Fetch active inventory
+          useEffect(() => {
+            if (!db) return;
+            
+            setIsLoading(true);
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
+            
+            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+              const items = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  ...data,
+                  masterItem: masterItemMap[data.masterItemId] || { itemId: 'N/A', nameAndSpec: 'N/A' }
+                }
+              });
+              setInventoryItems(items);
+              setIsLoading(false);
+            }, (err) => {
+              console.error("Error fetching inventory: ", err);
+              setError("Failed to load inventory.");
+              setIsLoading(false);
+            });
+
+            return () => unsubscribe();
+          }, [db, userId, masterItemMap]);
+
+          const resetForm = () => {
+            setForm({
+              masterItemId: masterItems.length > 0 ? masterItems[0].id : '',
+              lotNumber: '',
+              dateReceived: '',
+              expirationDate: '',
+              quantity: 1,
+              storageLocation: '',
+              status: 'Approved for Use',
+            });
+            setIsEditing(false);
+            setCurrentItem(null);
+          };
+
+          const openAddModal = () => {
+            resetForm();
+            setIsModalOpen(true);
+          };
+
+          const openEditModal = (item) => {
+            setForm({
+              masterItemId: item.masterItemId,
+              lotNumber: item.lotNumber,
+              dateReceived: item.dateReceived,
+              expirationDate: item.expirationDate,
+              quantity: item.quantity,
+              storageLocation: item.storageLocation,
+              status: item.status,
+            });
+            setIsEditing(true);
+            setCurrentItem(item); 
+            setIsModalOpen(true);
+          };
+
+          const closeModal = () => {
+            setIsModalOpen(false);
+            resetForm();
+          };
+
+          const handleChange = (e) => {
+            const { name, value, type } = e.target;
+            setForm((prev) => ({
+              ...prev,
+              [name]: type === 'number' ? Number(value) : value,
+            }));
+          };
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            if (!db || !userId || !userName) return;
+
+            try {
+              const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
+              
+              if (isEditing) {
+                const docRef = doc(collectionRef, currentItem.id);
+                await setDoc(docRef, form);
+                
+                const oldQty = currentItem.quantity;
+                const newQty = form.quantity;
+                const oldStatus = currentItem.status;
+                const newStatus = form.status;
+
+                if (oldQty !== newQty) {
+                  const change = newQty - oldQty;
+                  const action = change > 0 ? "Stock Added" : "Stock Used";
+                  await logChange(db, userId, userName, currentItem, action, change, newQty, newStatus);
+                }
+                
+                if (oldStatus !== newStatus && oldQty === newQty) {
+                  await logChange(db, userId, userName, currentItem, "Status Change", 0, newQty, newStatus);
+                }
+
+              } else {
+                const newDocRef = await addDoc(collectionRef, form);
+                const newItem = { ...form, id: newDocRef.id, masterItem: masterItemMap[form.masterItemId] };
+                await logChange(db, userId, userName, newItem, "New Item Added", form.quantity, form.quantity);
+              }
+              closeModal();
+            } catch (err) {
+              console.error("Error saving inventory item: ", err);
+            }
+          };
+          
+          const handleDelete = async (item) => {
+            if (!window.confirm(`Are you sure you want to delete Lot ${item.lotNumber}? This action will be logged.`)) return;
+            
+            if (!db || !userId || !userName) return;
+            try {
+              await logChange(db, userId, userName, item, "Item Deleted", -item.quantity, 0, "Disposed");
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', item.id);
+              await deleteDoc(docRef);
+            } catch (err) {
+              console.error("Error deleting item: ", err);
+            }
+          };
+          
+          const handleStatusChange = async (docId, newStatus) => {
+            if (!db || !userId || !userName) return;
+            
+            const item = inventoryItems.find(i => i.id === docId);
+            if (!item) return;
+            
+            try {
+              await logChange(db, userId, userName, item, "Status Change", 0, item.quantity, newStatus);
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', docId);
+              await updateDoc(docRef, { status: newStatus });
+            } catch (err) {
+              console.error("Error updating status: ", err);
+            }
+          };
+          
+          const getStatusColor = (status, expDate) => {
+            const isExpired = expDate && new Date(expDate) < new Date();
+            if (status === 'Disposed') return 'bg-gray-200 text-gray-800';
+            if (status === 'Expired' || isExpired) return 'bg-red-100 text-red-800';
+            if (status === 'Quarantined') return 'bg-yellow-100 text-yellow-800';
+            return 'bg-green-100 text-green-800';
+          };
+
+          const lowStockItems = useMemo(() => {
+            return inventoryItems
+              .map(item => {
+                const masterItem = masterItemMap[item.masterItemId];
+                const threshold = masterItem?.lowStockThreshold || 3;
+                if (item.quantity <= threshold && item.status === 'Approved for Use') {
+                  return {
+                    id: item.id,
+                    name: masterItem ? `${masterItem.itemId} - ${masterItem.nameAndSpec}` : 'Unknown Item',
+                    quantity: item.quantity,
+                    threshold: threshold,
+                  };
+                }
+                return null;
+              })
+              .filter(Boolean);
+          }, [inventoryItems, masterItemMap]);
+
+          return (
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-800">Active Inventory</h2>
+                <Button onClick={openAddModal} variant="primary" disabled={masterItems.length === 0}>
+                  <IconPlus /> Add New Stock
+                </Button>
+              </div>
+              
+              {masterItems.length === 0 && (
+                 <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+                   <p>Please add at least one item to the **Master Consumable List** before adding stock to the inventory.</p>
+                 </div>
+              )}
+
+              {lowStockItems.length > 0 && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-md shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <IconAlertTriangle />
+                    <h3 className="text-lg font-semibold text-yellow-800">Low Stock Warning</h3>
+                  </div>
+                  <ul className="mt-2 list-disc list-inside text-yellow-700 space-y-1">
+                    {lowStockItems.map(item => (
+                      <li key={item.id}>
+                        <strong>{item.name}:</strong> Currently {item.quantity} in stock (threshold is {item.threshold}).
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {isLoading && <p>Loading inventory...</p>}
+              {error && <p className="text-red-500">{error}</p>}
+
+              <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot #</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {inventoryItems.map((item) => {
+                      const masterItem = item.masterItem;
+                      const itemName = masterItem ? `${masterItem.itemId} - ${masterItem.nameAndSpec}` : "Loading...";
+                      const statusColor = getStatusColor(item.status, item.expirationDate);
+                      const lowStockThreshold = masterItem?.lowStockThreshold || 3;
+                      const isLowStock = item.quantity <= lowStockThreshold && item.status === 'Approved for Use';
+                      
+                      return (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{itemName}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.dateReceived)}</td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${statusColor.includes('red') ? 'font-bold' : 'text-gray-500'}`}>
+                            {formatDate(item.expirationDate)}
+                          </td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isLowStock ? 'font-bold text-yellow-700' : 'text-gray-500'}`}>
+                            {isLowStock && <IconAlertTriangle />}{item.quantity}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.storageLocation}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <select
+                              value={item.status}
+                              onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                              className={`text-xs font-medium rounded-full p-1 border-none ${statusColor}`}
+                            >
+                              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="secondary" onClick={() => openEditModal(item)} aria-label="Edit"><IconEdit /></Button>
+                              <Button variant="danger" onClick={() => handleDelete(item)} aria-label="Delete"><IconTrash /></Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <Modal isOpen={isModalOpen} onClose={closeModal} title={isEditing ? "Edit Inventory Item" : "Add New Stock Item"} allowClose={true}>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <Select label="Master Item" id="masterItemId" name="masterItemId" value={form.masterItemId} onChange={handleChange} required disabled={isEditing}>
+                    <option value="" disabled>Select an approved item</option>
+                    {masterItems.map(item => (
+                      <option key={item.id} value={item.id}>{item.itemId} - {item.nameAndSpec}</option>
+                    ))}
+                  </Select>
+                  <Input label="Lot / Batch Number" id="lotNumber" name="lotNumber" value={form.lotNumber} onChange={handleChange} required disabled={isEditing} />
+                  <Input label="Date Received" id="dateReceived" name="dateReceived" type="date" value={form.dateReceived} onChange={handleChange} required />
+                  <Input label="Expiration Date" id="expirationDate" name="expirationDate" type="date" value={form.expirationDate} onChange={handleChange} />
+                  <Input label="Quantity" id="quantity" name="quantity" type="number" min="0" value={form.quantity} onChange={handleChange} required />
+                  <Input label="Storage Location" id="storageLocation" name="storageLocation" value={form.storageLocation} onChange={handleChange} />
+                  <Select label="Status" id="status" name="status" value={form.status} onChange={handleChange}>
+                    {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                  </Select>
+                  
+                  <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
+                    <Button type="submit" variant="primary">{isEditing ? "Save Changes" : "Add Item"}</Button>
+                  </div>
+                </form>
+              </Modal>
+            </div>
+          );
+        };
+
+        // --- Inventory Log Component ---
+        const InventoryLog = ({ db, masterItems }) => {
+          const [logItems, setLogItems] = useState([]);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState(null);
+
+          useEffect(() => {
+            if (!db) return;
+            
+            setIsLoading(true);
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventoryLog');
+            const q = query(collectionRef, orderBy('timestamp', 'desc')); 
+            
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+              const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setLogItems(items);
+              setIsLoading(false);
+            }, (err) => {
+              console.error("Error fetching log: ", err);
+              setError("Failed to load inventory log.");
+              setIsLoading(false);
+            });
+
+            return () => unsubscribe();
+          }, [db]);
+          
+          const getActionColor = (action) => {
+            if (action.includes("Added")) return 'text-green-600';
+            if (action.includes("Used")) return 'text-yellow-700';
+            if (action.includes("Deleted")) return 'text-red-600';
+            return 'text-gray-600';
+          };
+          
+          const formatChange = (change) => {
+            if (change > 0) return `+${change}`;
+            if (change < 0) return `${change}`;
+            return '0';
+          }
+
+          return (
+            <div className="p-4">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Inventory Log</h2>
+              
+              {isLoading && <p>Loading log...</p>}
+              {error && <p className="text-red-500">{error}</p>}
+
+              <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Name</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot #</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Qty</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {logItems.map((item) => (
+                      <tr key={item.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.timestamp, true)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{item.userName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{item.action}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{formatChange(item.quantityChange)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.newQuantity}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        };
+
+
+        // --- Main App Component ---
+        function App() {
+          const [db, setDb] = useState(null);
+          const [auth, setAuth] = useState(null);
+          const [userId, setUserId] = useState(null);
+          const [userName, setUserName] = useState(null);
+          const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+          const [isAuthReady, setIsAuthReady] = useState(false);
+          const [currentPage, setCurrentPage] = useState('inventory'); 
+          
+          const [masterItems, setMasterItems] = useState([]);
+          const [masterLoading, setMasterLoading] = useState(true);
+          const [masterError, setMasterError] = useState(null);
+          
+          const [authError, setAuthError] = useState(null);
+
+          // Initialize Firebase and Auth
+          useEffect(() => {
+            if (!window.firebase) {
+              console.error("Firebase SDKs not loaded!");
+              setAuthError("Failed to load Firebase SDKs. Please check your network connection and refresh.");
+              return;
+            }
+            
+            try {
+              // setLogLevel('debug'); 
+              const app = initializeApp(firebaseConfig);
+              const authInstance = getAuth(app);
+              const dbInstance = getFirestore(app);
+              
+              setAuth(authInstance);
+              setDb(dbInstance);
+
+              const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
+                if (user) {
+                  setUserId(user.uid);
+                  setIsAuthReady(true);
+                  setAuthError(null);
+
+                  // Check for user name in local storage
+                  const storedName = localStorage.getItem('labUserName');
+                  if (storedName) {
+                    setUserName(storedName);
+                  } else {
+                    setIsNameModalOpen(true); // Prompt for name
+                  }
+
+                } else {
+                  try {
+                    await signInAnonymously(authInstance);
+                  } catch (authError) {
+                    console.error("Error signing in anonymously: ", authError);
+                    setAuthError("Could not authenticate user. Database functionality is disabled.");
+                    setIsAuthReady(true); 
+                  }
+                }
+              });
+              return () => unsubscribe();
+              
+            } catch (e) {
+              console.error("Error initializing Firebase: ", e);
+              setAuthError("Failed to initialize database. Check Firebase config.");
+              setIsAuthReady(true); 
+            }
+          }, []);
+
+          // Fetch Master List
+          useEffect(() => {
+            if (!isAuthReady || !db) return;
+
+            setMasterLoading(true);
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'masterList');
+            
+            const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+              const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setMasterItems(items);
+              setMasterLoading(false);
+            }, (err) => {
+              console.error("Error fetching master list: ", err);
+              setMasterError("Failed to load master list.");
+              setMasterLoading(false);
+            });
+
+            return () => unsubscribe();
+          }, [db, userId, isAuthReady]);
+          
+          const handleNameSave = (name). => {
+            localStorage.setItem('labUserName', name);
+            setUserName(name);
+            setIsNameModalOpen(false);
+          };
+
+          const NavButton = ({ page, label, icon }) => (
+            <button
+              onClick={() => setCurrentPage(page)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium ${
+                currentPage === page
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {icon}
+              {label}
+            </button>
+          );
+          
+          const PageContent = () => {
+            if (!isAuthReady || (!userName && !isNameModalOpen)) {
+              return <p className="text-center p-4">Loading authentication & user data...</p>;
+            }
+            
+            if (authError) {
+              return (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
+                  <p className="font-bold">Connection Error</p>
+                  <p>{authError}</p>
+                  <p className="mt-2 text-sm">Please ensure you are connected to the internet.</p>
+                </div>
+              );
+            }
+            if (!userId) {
+              return <p className="text-center p-4 text-red-500 font-medium">Authentication failed. Cannot connect to database.</p>;
+            }
+            
+            // All good, show current page (if name modal isn't open)
+            if (isNameModalOpen) return null; // Don't show page content while modal is open
+            
+            switch(currentPage) {
+              case 'inventory':
+                return <ActiveInventory db={db} userId={userId} userName={userName} masterItems={masterItems} />;
+              case 'master':
+                return <MasterList db={db} userId={userId} masterItems={masterItems} isLoading={masterLoading} error={masterError} />;
+              case 'log':
+                return <InventoryLog db={db} masterItems={masterItems} />;
+              default:
+                return <ActiveInventory db={db} userId={userId} userName={userName} masterItems={masterItems} />;
+            }
+          };
+
+          return (
+            <div className="min-h-screen font-sans">
+              <UserNameModal isOpen={isNameModalOpen} onSave={handleNameSave} />
+            
+              <header className="bg-white shadow-sm sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between items-center h-16">
+                    <div className="flex items-center gap-3">
+                      <IconClipboard />
+                      <h1 className="text-xl font-semibold text-gray-900">Shared Lab Manager (Cloud)</h1>
+                    </div>
+                    <nav className="flex space-x-2">
+                      <NavButton page="inventory" label="Active Inventory" icon={<IconClipboard />} />
+                      <NavButton page="master" label="Master List" icon={<IconEdit />} />
+                      <NavButton page="log" label="Inventory Log" icon={<IconHistory />} />
+                    </nav>
+                    <div className.="text-sm font-medium text-gray-600">
+                      User: <span className="font-bold text-blue-600">{userName || '...'}</span>
+                    </div>
+                  </div>
+                </div>
+              </header>
+              <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                <PageContent />
+              </main>
+            </div>
+          );
+        }
+
+        // 6. Render the App
+        const checkFirebase = setInterval(() => {
+          if (window.firebase) {
+            clearInterval(checkFirebase);
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+          }
+        }, 100);
+
+    </script>
+</body>
+</html>
+
