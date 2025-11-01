@@ -14,59 +14,70 @@
     
     <!-- 4. Load Firebase SDKs -->
     <script type="module">
-      // This is a workaround to make Firebase SDKs available to the Babel script
-      // by attaching them to the window object.
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
       import { 
-        getAuth, 
-        onAuthStateChanged,
-        createUserWithEmailAndPassword,
-        signInWithEmailAndPassword,
-        signOut
+        getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+        signInWithEmailAndPassword, signOut
       } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
       import { 
-        getFirestore, 
-        doc, 
-        addDoc, 
-        setDoc, 
-        updateDoc, 
-        deleteDoc, 
-        onSnapshot, 
-        collection, 
-        query, 
-        setLogLevel,
-        serverTimestamp,
-        orderBy,
-        getDoc // New: Needed for checking user role
+        getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, 
+        onSnapshot, collection, query, setLogLevel, serverTimestamp, orderBy, getDoc
       } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
       window.firebase = {
         app: { initializeApp },
         auth: { 
-          getAuth, 
-          onAuthStateChanged,
-          createUserWithEmailAndPassword,
-          signInWithEmailAndPassword,
-          signOut
+          getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+          signInWithEmailAndPassword, signOut
         },
         firestore: {
           getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, 
-          collection, query, setLogLevel, serverTimestamp, orderBy, getDoc // New
+          collection, query, setLogLevel, serverTimestamp, orderBy, getDoc
         }
       };
     </script>
     
+    <!-- 5. Load Google Fonts (Inter for EN, Vazirmatn for FA) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-      body { font-family: 'Inter', sans-serif; }
+      /* Apply Vazirmatn font when in Farsi */
+      [lang="fa"] body {
+        font-family: 'Vazirmatn', sans-serif;
+      }
+      /* Default font */
+      body { 
+        font-family: 'Inter', sans-serif; 
+      }
       #loading {
         display: flex; justify-content: center; align-items: center;
         height: 100vh; font-size: 1.2rem; font-weight: 500; color: #333;
       }
-      /* Simple disable style */
       button:disabled, select:disabled {
         cursor: not-allowed;
         opacity: 0.6;
       }
+      /* Tailwind logical properties for RTL support */
+      .text-start { text-align: left; }
+      .text-end { text-align: right; }
+      [dir="rtl"] .text-start { text-align: right; }
+      [dir="rtl"] .text-end { text-align: left; }
+      
+      .ms-2 { margin-left: 0.5rem; }
+      .me-2 { margin-right: 0.5rem; }
+      [dir="rtl"] .ms-2 { margin-left: 0; margin-right: 0.5rem; }
+      [dir="rtl"] .me-2 { margin-right: 0; margin-left: 0.5rem; }
+
+      .gap-2 { gap: 0.5rem; }
+      .gap-3 { gap: 0.75rem; }
+      .gap-4 { gap: 1rem; }
+      
+      .ps-4 { padding-left: 1rem; }
+      .pe-4 { padding-right: 1rem; }
+      [dir="rtl"] .ps-4 { padding-left: 0; padding-right: 1rem; }
+      [dir="rtl"] .pe-4 { padding-right: 0; padding-left: 1rem; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -77,7 +88,7 @@
 
     <!-- 5. React App Code (transpiled by Babel) -->
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
+        const { useState, useEffect, useMemo, useCallback, createContext, useContext } = React;
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -89,44 +100,409 @@
           appId: "1:674188672813:web:887caed5ea2fc927fbdda4",
           measurementId: "G-TK88H80GYC"
         };
-        
         const appId = "cons-593c6"; 
         
         // --- Destructure Firebase from window ---
         const { initializeApp } = window.firebase.app;
         const { 
-          getAuth, 
-          onAuthStateChanged,
-          createUserWithEmailAndPassword,
-          signInWithEmailAndPassword,
-          signOut
+          getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+          signInWithEmailAndPassword, signOut
         } = window.firebase.auth;
         const { 
           getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, 
-          onSnapshot, collection, query, setLogLevel, serverTimestamp, orderBy,
-          getDoc
+          onSnapshot, collection, query, setLogLevel, serverTimestamp, orderBy, getDoc
         } = window.firebase.firestore;
 
+        // --- 1. TRANSLATION DICTIONARY ---
+        const translations = {
+          en: {
+            app: {
+              title: "Shared Lab Manager (Cloud)",
+              loading: "Connecting to your lab inventory...",
+              loadingPermissions: "Loading user permissions...",
+              user: "User",
+              signOut: "Sign Out",
+              connectionError: "Connection Error",
+              connectionErrorMsg: "Failed to load Firebase SDKs. Please check your network connection and refresh.",
+              authError: "Failed to initialize database. Check Firebase config.",
+              authFailed: "Authentication failed. Cannot connect to database.",
+            },
+            nav: {
+              inventory: "Active Inventory",
+              masterList: "Master List",
+              log: "Inventory Log",
+              admin: "Manage Accounts"
+            },
+            auth: {
+              signInTitle: "Sign in to your account",
+              signUpTitle: "Create a new account",
+              signIn: "Sign In",
+              signUp: "Sign Up",
+              email: "Email address",
+              password: "Password",
+              processing: "Processing...",
+              createAccount: "Create Account",
+              error: {
+                invalid: "Invalid email or password.",
+                inUse: "This email address is already in use.",
+                weakPass: "Password is too weak. Must be at least 6 characters.",
+                unknown: "An unknown error occurred. Please try again."
+              }
+            },
+            masterList: {
+              title: "Master Consumable List",
+              export: "Export to CSV",
+              addNew: "Add New Master Item",
+              loading: "Loading master list...",
+              error: "Failed to load master list.",
+              header: {
+                id: "Item ID",
+                category: "Category",
+                name: "Name & Specification",
+                suppliers: "Approved Suppliers",
+                actions: "Actions"
+              },
+              deleteConfirm: "Are you sure you want to delete this master item?",
+              modal: {
+                editTitle: "Edit Master Item",
+                addTitle: "Add New Master Item",
+                id: "Item ID (e.g., SP-001)",
+                category: "Category",
+                name: "Name & Specification",
+                suppliers: "Approved Suppliers",
+                verification: "Acceptance / Verification Action",
+                lowStock: "Low Stock Threshold",
+                cancel: "Cancel",
+                save: "Save Changes",
+                add: "Add Item"
+              },
+              categories: ['Sample Prep', 'Chemical Analysis', 'General Lab']
+            },
+            inventory: {
+              title: "Active Inventory",
+              addNew: "Add New Stock",
+              noMasterItem: "Please add at least one item to the **Master Consumable List** before adding stock to the inventory.",
+              lowStockWarn: "Low Stock Warning",
+              lowStockMsg: "Currently {quantity} in stock (threshold is {threshold}).",
+              loading: "Loading inventory...",
+              error: "Failed to load inventory.",
+              header: {
+                name: "Item Name",
+                lot: "Lot #",
+                expires: "Expires",
+                quantity: "Quantity",
+                location: "Location",
+                status: "Status",
+                actions: "Actions"
+              },
+              status: {
+                approved: "Approved for Use",
+                quarantined: "Quarantined",
+                disposed: "Disposed",
+                expired: "Expired"
+              },
+              take: "Take",
+              edit: "Edit",
+              delete: "Delete",
+              deleteConfirm: "Are you sure you want to delete Lot {lotNumber}? This action will be logged.",
+              modal: {
+                editTitle: "Edit Inventory Item",
+                addTitle: "Add New Stock Item",
+                masterItem: "Master Item",
+                selectItem: "Select an approved item",
+                lot: "Lot / Batch Number",
+                received: "Date Received",
+                expires: "Expiration Date",
+                quantity: "Quantity",
+                location: "Storage Location",
+                status: "Status",
+                cancel: "Cancel",
+                save: "Save Changes",
+                add: "Add Item"
+              },
+              takeModal: {
+                title: "Take Stock",
+                inStock: "Currently in Stock:",
+                quantity: "Quantity to Take:",
+                errorZero: "Amount must be greater than zero.",
+                errorMore: "Amount cannot be more than the {quantity} in stock.",
+                confirm: "Confirm & Log"
+              }
+            },
+            log: {
+              title: "Inventory Log",
+              export: "Export to CSV",
+              loading: "Loading log...",
+              error: "Failed to load inventory log.",
+              header: {
+                timestamp: "Timestamp",
+                user: "User",
+                name: "Item Name",
+                lot: "Lot #",
+                action: "Action",
+                change: "Change",
+                newQty: "New Qty",
+                status: "Status"
+              },
+              actions: {
+                added: "Stock Added",
+                used: "Stock Used",
+                correction: "Stock Used/Correction",
+                status: "Status Change",
+                new: "New Item Added",
+                deleted: "Item Deleted"
+              }
+            },
+            admin: {
+              title: "Manage User Accounts",
+              noPermission: "You do not have permission to view this page.",
+              loading: "Loading user accounts...",
+              error: "Failed to load user list.",
+              header: {
+                email: "User Email",
+                uid: "User ID (UID)",
+                role: "Role"
+              },
+              demoteWarning: "Warning: You are about to remove your own admin status. Are you sure?",
+              roles: {
+                admin: "Admin",
+                technician: "Technician",
+                viewer: "Viewer"
+              }
+            }
+          },
+          fa: {
+            app: {
+              title: "مدیر آزمایشگاه (ابری)",
+              loading: "در حال اتصال به انبار آزمایشگاه...",
+              loadingPermissions: "در حال بارگذاری دسترسی‌های کاربر...",
+              user: "کاربر",
+              signOut: "خروج",
+              connectionError: "خطای اتصال",
+              connectionErrorMsg: "بارگذاری Firebase SDK با مشکل مواجه شد. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.",
+              authError: "مقداردهی اولیه پایگاه داده ناموفق بود. تنظیمات Firebase را بررسی کنید.",
+              authFailed: "احراز هویت ناموفق بود. امکان اتصال به پایگاه داده وجود ندارد.",
+            },
+            nav: {
+              inventory: "موجودی فعال",
+              masterList: "لیست اصلی",
+              log: "گزارش انبار",
+              admin: "مدیریت حساب‌ها"
+            },
+            auth: {
+              signInTitle: "ورود به حساب کاربری",
+              signUpTitle: "ایجاد حساب کاربری جدید",
+              signIn: "ورود",
+              signUp: "ثبت نام",
+              email: "آدرس ایمیل",
+              password: "رمز عبور",
+              processing: "در حال پردازش...",
+              createAccount: "ایجاد حساب",
+              error: {
+                invalid: "ایمیل یا رمز عبور نامعتبر است.",
+                inUse: "این آدرس ایمیل قبلاً استفاده شده است.",
+                weakPass: "رمز عبور ضعیف است. باید حداقل ۶ کاراکتر باشد.",
+                unknown: "خطایی ناشناخته رخ داد. لطفاً دوباره تلاش کنید."
+              }
+            },
+            masterList: {
+              title: "لیست اصلی مواد مصرفی",
+              export: "خروجی CSV",
+              addNew: "افزودن آیتم اصلی جدید",
+              loading: "در حال بارگذاری لیست اصلی...",
+              error: "بارگذاری لیست اصلی ناموفق بود.",
+              header: {
+                id: "کد کالا",
+                category: "دسته‌بندی",
+                name: "نام و مشخصات",
+                suppliers: "تامین‌کنندگان تایید شده",
+                actions: "عملیات"
+              },
+              deleteConfirm: "آیا از حذف این آیتم اصلی مطمئن هستید؟",
+              modal: {
+                editTitle: "ویرایش آیتم اصلی",
+                addTitle: "افزودن آیتم اصلی جدید",
+                id: "کد کالا (مثال: SP-001)",
+                category: "دسته‌بندی",
+                name: "نام و مشخصات",
+                suppliers: "تامین‌کنندگان تایید شده",
+                verification: "اقدام پذیرش / تایید",
+                lowStock: "آستانه کمبود موجودی",
+                cancel: "لغو",
+                save: "ذخیره تغییرات",
+                add: "افزودن آیتم"
+              },
+              categories: ['آماده‌سازی نمونه', 'آنالیز شیمیایی', 'عمومی آزمایشگاه']
+            },
+            inventory: {
+              title: "موجودی فعال",
+              addNew: "افزودن موجودی جدید",
+              noMasterItem: "لطفاً قبل از افزودن موجودی، حداقل یک آیتم به **لیست اصلی مواد مصرفی** اضافه کنید.",
+              lowStockWarn: "هشدار کمبود موجودی",
+              lowStockMsg: "در حال حاضر {quantity} عدد موجود است (آستانه {threshold} است).",
+              loading: "در حال بارگذاری موجودی...",
+              error: "بارگذاری موجودی ناموفق بود.",
+              header: {
+                name: "نام کالا",
+                lot: "شماره لات",
+                expires: "انقضا",
+                quantity: "تعداد",
+                location: "محل نگهداری",
+                status: "وضعیت",
+                actions: "عملیات"
+              },
+              status: {
+                approved: "آماده استفاده",
+                quarantined: "قرنطینه",
+                disposed: "اسقاط شده",
+                expired: "منقضی شده"
+              },
+              take: "برداشت",
+              edit: "ویرایش",
+              delete: "حذف",
+              deleteConfirm: "آیا از حذف لات {lotNumber} مطمئن هستید؟ این عملیات ثبت خواهد شد.",
+              modal: {
+                editTitle: "ویرایش آیتم موجودی",
+                addTitle: "افزودن موجودی جدید",
+                masterItem: "آیتم اصلی",
+                selectItem: "یک آیتم تایید شده را انتخاب کنید",
+                lot: "شماره لات / بچ",
+                received: "تاریخ دریافت",
+                expires: "تاریخ انقضا",
+                quantity: "تعداد",
+                location: "محل نگهداری",
+                status: "وضعیت",
+                cancel: "لغو",
+                save: "ذخیره تغییرات",
+                add: "افزودن آیتم"
+              },
+              takeModal: {
+                title: "برداشت از موجودی",
+                inStock: "موجودی فعلی:",
+                quantity: "تعداد برداشتی:",
+                errorZero: "تعداد باید بیشتر از صفر باشد.",
+                errorMore: "تعداد برداشتی نمی‌تواند از {quantity} موجود بیشتر باشد.",
+                confirm: "تایید و ثبت"
+              }
+            },
+            log: {
+              title: "گزارش انبار",
+              export: "خروجی CSV",
+              loading: "در حال بارگذاری گزارش...",
+              error: "بارگذاری گزارش ناموفق بود.",
+              header: {
+                timestamp: "زمان",
+                user: "کاربر",
+                name: "نام کالا",
+                lot: "شماره لات",
+                action: "عملیات",
+                change: "تغییر",
+                newQty: "موجودی جدید",
+                status: "وضعیت"
+              },
+              actions: {
+                added: "افزایش موجودی",
+                used: "برداشت موجودی",
+                correction: "برداشت/اصلاح موجودی",
+                status: "تغییر وضعیت",
+                new: "افزودن آیتم جدید",
+                deleted: "حذف آیتم"
+              }
+            },
+            admin: {
+              title: "مدیریت حساب‌های کاربری",
+              noPermission: "شما اجازه دسترسی به این صفحه را ندارید.",
+              loading: "در حال بارگذاری حساب‌های کاربری...",
+              error: "بارگذاری لیست کاربران ناموفق بود.",
+              header: {
+                email: "ایمیل کاربر",
+                uid: "شناسه کاربری (UID)",
+                role: "نقش"
+              },
+              demoteWarning: "هشدار: شما در حال حذف دسترسی ادمین خود هستید. آیا مطمئن هستید؟",
+              roles: {
+                admin: "ادمین",
+                technician: "تکنسین",
+                viewer: "ناظر"
+              }
+            }
+          }
+        };
+
+        // --- 2. LANGUAGE CONTEXT & PROVIDER ---
+        const LangContext = createContext();
+
+        const LangProvider = ({ children }) => {
+          const [language, setLanguage] = useState('en'); // Default to English
+
+          useEffect(() => {
+            // Set direction for RTL support
+            document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr';
+            document.documentElement.lang = language;
+          }, [language]);
+
+          const t = useCallback((key, params = {}) => {
+            const keys = key.split('.');
+            let result = translations[language];
+            try {
+              for (const k of keys) {
+                result = result[k];
+              }
+              if (typeof result === 'string') {
+                // Handle simple replacements like {quantity}
+                return result.replace(/\{(\w+)\}/g, (_, paramName) => params[paramName] || '');
+              }
+              // Handle nested keys that return an object (e.g., status)
+              return result;
+            } catch (e) {
+              // Fallback to English if Farsi key is missing
+              try {
+                let fallback = translations['en'];
+                for (const k of keys) {
+                  fallback = fallback[k];
+                }
+                if (typeof fallback === 'string') {
+                  return fallback.replace(/\{(\w+)\}/g, (_, paramName) => params[paramName] || '');
+                }
+                return fallback || key; // Return the key as last resort
+              } catch (e2) {
+                 return key; // Return the key itself
+              }
+            }
+          }, [language]);
+
+          return (
+            <LangContext.Provider value={{ language, setLanguage, t }}>
+              {children}
+            </LangContext.Provider>
+          );
+        };
+        
+        // Custom hook to use translations
+        const useLang = () => useContext(LangContext);
+        
 
         // --- Helper Functions & Constants ---
         const formatDate = (dateInput, includeTime = false) => {
           if (!dateInput) return 'N/A';
           let date;
-          if (dateInput && dateInput.toDate) {
-            date = dateInput.toDate();
-          } else if (typeof dateInput === 'string') {
-            date = new Date(dateInput);
-          } else {
-            date = dateInput;
-          }
+          if (dateInput && dateInput.toDate) { date = dateInput.toDate(); } 
+          else if (typeof dateInput === 'string') { date = new Date(dateInput); } 
+          else { date = dateInput; }
+          
           if (!date || isNaN(date.getTime())) return 'N/A';
-          const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+          
+          // Use 'fa-IR' locale for Farsi dates
+          const locale = document.documentElement.lang === 'fa' ? 'fa-IR' : 'en-US';
+          
+          const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit', calendar: locale === 'fa-IR' ? 'persian' : 'gregory' };
           const timeOptions = { hour: '2-digit', minute: '2-digit' };
+          
           let formattedDate;
           if (includeTime) {
-            formattedDate = date.toLocaleString('en-US', {...dateOptions, ...timeOptions});
+            formattedDate = date.toLocaleString(locale, {...dateOptions, ...timeOptions});
           } else {
-            formattedDate = date.toLocaleDateString('en-US', dateOptions);
+            formattedDate = date.toLocaleDateString(locale, dateOptions);
           }
           return formattedDate.replace(',', ''); 
         };
@@ -141,9 +517,12 @@
           return strValue;
         };
 
-        const exportToCSV = (data, headers, filename) => {
+        const exportToCSV = (data, headers, filename, t) => {
           const csvRows = [];
-          csvRows.push(headers.map(sanitizeForCSV).join(','));
+          // Translate headers for CSV
+          const translatedHeaders = headers.map(h => t(`log.header.${h}`) || t(`masterList.header.${h}`) || h);
+          csvRows.push(translatedHeaders.map(sanitizeForCSV).join(','));
+
           for (const item of data) {
             const values = headers.map(headerKey => {
               if (headerKey === 'itemName' && item.masterItem) {
@@ -155,12 +534,25 @@
               if (headerKey === 'userEmail' && item.userEmail) {
                 return sanitizeForCSV(item.userEmail);
               }
+               // Translate status and action fields
+              if (headerKey === 'status') {
+                const statusKey = Object.keys(translations.en.inventory.status).find(key => translations.en.inventory.status[key] === item.status);
+                return sanitizeForCSV(t(`inventory.status.${statusKey}`) || item.status);
+              }
+              if (headerKey === 'action') {
+                 const actionKey = Object.keys(translations.en.log.actions).find(key => translations.en.log.actions[key] === item.action);
+                return sanitizeForCSV(t(`log.actions.${actionKey}`) || item.action);
+              }
               return sanitizeForCSV(item[headerKey]);
             });
             csvRows.push(values.join(','));
           }
+
           const csvString = csvRows.join('\n');
-          const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+          // Add BOM for Excel to recognize UTF-8 (especially for Farsi)
+          const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+          const blob = new Blob([bom, csvString], { type: 'text/csv;charset=utf-8;' });
+          
           const link = document.createElement('a');
           if (link.download !== undefined) { 
             const url = URL.createObjectURL(blob);
@@ -184,9 +576,9 @@
         const IconMinus = () => (<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
         const IconSignOut = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>);
         const IconX = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
-        const IconAlertTriangle = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 inline-block mr-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>);
-        // New Admin Icon
+        const IconAlertTriangle = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 inline-block me-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>);
         const IconAdmin = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
+        const IconGlobe = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>);
 
 
         // --- Reusable UI Components ---
@@ -198,7 +590,7 @@
                 <div className="flex items-center justify-between p-4 border-b rounded-t">
                   <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
                   {allowClose && (
-                    <button type="button" className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center" onClick={onClose} aria-label="Close modal">
+                    <button type="button" className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ms-auto inline-flex items-center" onClick={onClose} aria-label="Close modal">
                       <IconX />
                     </button>
                   )}
@@ -210,6 +602,7 @@
         };
         
         const TakeStockModal = ({ isOpen, onClose, item, onConfirm }) => {
+          const { t } = useLang();
           const [takeAmount, setTakeAmount] = useState(1);
           const [error, setError] = useState('');
           const masterItem = item?.masterItem || {};
@@ -218,26 +611,26 @@
           const handleSubmit = (e) => {
             e.preventDefault();
             const amount = Number(takeAmount);
-            if (amount <= 0) { setError("Amount must be greater than zero."); return; }
-            if (amount > currentQty) { setError(`Amount cannot be more than the ${currentQty} in stock.`); return; }
+            if (amount <= 0) { setError(t('inventory.takeModal.errorZero')); return; }
+            if (amount > currentQty) { setError(t('inventory.takeModal.errorMore', {quantity: currentQty})); return; }
             onConfirm(amount);
           };
           
           useEffect(() => { if (isOpen) { setTakeAmount(1); setError(''); } }, [isOpen]);
 
           return (
-            <Modal isOpen={isOpen} onClose={onClose} title="Take Stock" allowClose={true}>
+            <Modal isOpen={isOpen} onClose={onClose} title={t('inventory.takeModal.title')} allowClose={true}>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-800">{masterItem.itemId} - {masterItem.nameAndSpec}</h4>
-                  <p className="text-sm text-gray-600">Lot #: {item?.lotNumber}</p>
-                  <p className="text-sm text-gray-600">Currently in Stock: <span className="font-bold">{currentQty}</span></p>
+                  <p className="text-sm text-gray-600">{t('inventory.header.lot')}: {item?.lotNumber}</p>
+                  <p className="text-sm text-gray-600">{t('inventory.takeModal.inStock')} <span className="font-bold">{currentQty}</span></p>
                 </div>
-                <Input label="Quantity to Take:" id="takeAmount" name="takeAmount" type="number" min="1" max={currentQty} value={takeAmount} onChange={(e) => setTakeAmount(e.target.value)} required autoFocus />
+                <Input label={t('inventory.takeModal.quantity')} id="takeAmount" name="takeAmount" type="number" min="1" max={currentQty} value={takeAmount} onChange={(e) => setTakeAmount(e.target.value)} required autoFocus />
                 {error && <p className="text-red-600 text-sm">{error}</p>}
                 <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                  <Button type="submit" variant="primary">Confirm & Log</Button>
+                  <Button type="button" variant="secondary" onClick={onClose}>{t('masterList.modal.cancel')}</Button>
+                  <Button type="submit" variant="primary">{t('inventory.takeModal.confirm')}</Button>
                 </div>
               </form>
             </Modal>
@@ -246,14 +639,14 @@
 
         const Input = ({ label, id, ...props }) => (
           <div>
-            <label htmlFor={id} className="block mb-2 text-sm font-medium text-gray-900">{label}</label>
+            <label htmlFor={id} className="block mb-2 text-sm font-medium text-gray-900 text-start">{label}</label>
             <input id={id} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:opacity-50 disabled:cursor-not-allowed" {...props} />
           </div>
         );
 
         const Select = ({ label, id, children, ...props }) => (
           <div>
-            <label htmlFor={id} className="block mb-2 text-sm font-medium text-gray-900">{label}</label>
+            <label htmlFor={id} className="block mb-2 text-sm font-medium text-gray-900 text-start">{label}</label>
             <select id={id} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:opacity-50 disabled:cursor-not-allowed" {...props}>
               {children}
             </select>
@@ -276,36 +669,37 @@
         };
 
         // --- Log Helper Function ---
-        const logChange = async (db, user, item, action, quantityChange, newQuantity, newStatus = null) => {
+        const logChange = async (db, user, item, actionKey, quantityChange, newQuantity, newStatus = null) => {
           if (!db || !appId || !user || !user.uid || !user.email) {
             console.error("Log failed: DB, AppID, or User missing.");
             return;
           }
           const logCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'inventoryLog');
           const masterItem = item.masterItem || { itemId: 'N/A', nameAndSpec: 'N/A' };
+          
+          // Use the English key as the persistent log action
+          const action = translations['en'].log.actions[actionKey] || actionKey;
+          
           const logEntry = {
             timestamp: serverTimestamp(),
             userId: user.uid, 
-            userEmail: user.email, // Use email for logging
+            userEmail: user.email,
             inventoryItemId: item.id || 'N/A',
             masterItemId: item.masterItemId,
             itemName: `${masterItem.itemId} - ${masterItem.nameAndSpec}`,
             lotNumber: item.lotNumber,
-            action: action,
+            action: action, // Store the English action
             quantityChange: quantityChange,
             newQuantity: newQuantity,
             status: newStatus || item.status,
           };
-          try {
-            await addDoc(logCollectionRef, logEntry);
-          } catch (err) {
-            console.error("Error writing to log: ", err);
-          }
+          try { await addDoc(logCollectionRef, logEntry); } 
+          catch (err) { console.error("Error writing to log: ", err); }
         };
-
 
         // --- Master List Component ---
         const MasterList = ({ db, user, userRole, masterItems, isLoading, error }) => {
+          const { t } = useLang();
           const [isModalOpen, setIsModalOpen] = useState(false);
           const [isEditing, setIsEditing] = useState(false);
           const [currentItemId, setCurrentItemId] = useState(null);
@@ -314,14 +708,12 @@
             approvedSuppliers: '', verificationAction: '', lowStockThreshold: 3,
           });
 
-          const categories = ['Sample Prep', 'Chemical Analysis', 'General Lab'];
-          
-          // Role Check
+          const categories = t('masterList.categories');
           const canManage = userRole === 'admin';
 
           const resetForm = () => {
             setForm({
-              itemId: '', category: 'Sample Prep', nameAndSpec: '',
+              itemId: '', category: categories[0], nameAndSpec: '',
               approvedSuppliers: '', verificationAction: '', lowStockThreshold: 3,
             });
             setIsEditing(false);
@@ -340,7 +732,6 @@
             setIsModalOpen(true);
           };
           const closeModal = () => { setIsModalOpen(false); resetForm(); };
-
           const handleChange = (e) => {
             const { name, value, type } = e.target;
             setForm((prev) => ({ ...prev, [name]: type === 'number' ? Number(value) : value }));
@@ -348,73 +739,66 @@
 
           const handleSubmit = async (e) => {
             e.preventDefault();
-            if (!db || !canManage) return; // Permission check
+            if (!db || !canManage) return;
             try {
               const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'masterList');
-              if (isEditing) {
-                await setDoc(doc(collectionRef, currentItemId), form);
-              } else {
-                await addDoc(collectionRef, form);
-              }
+              if (isEditing) { await setDoc(doc(collectionRef, currentItemId), form); } 
+              else { await addDoc(collectionRef, form); }
               closeModal();
             } catch (err) { console.error("Error saving master item: ", err); }
           };
 
           const handleDelete = async (docId) => {
-            if (!canManage || !window.confirm("Are you sure you want to delete this master item?")) return;
+            if (!canManage || !window.confirm(t('masterList.deleteConfirm'))) return;
             if (!db) return;
-            try {
-              await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'masterList', docId));
-            } catch (err) { console.error("Error deleting item: ", err); }
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'masterList', docId)); } 
+            catch (err) { console.error("Error deleting item: ", err); }
           };
           
           const handleExport = () => {
             const headers = ['itemId', 'category', 'nameAndSpec', 'approvedSuppliers', 'verificationAction', 'lowStockThreshold'];
-            exportToCSV(masterItems, headers, 'master-consumable-list.csv');
+            exportToCSV(masterItems, headers, 'master-consumable-list.csv', t);
           };
 
           return (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-800">Master Consumable List</h2>
+                <h2 className="text-2xl font-semibold text-gray-800">{t('masterList.title')}</h2>
                 <div className="flex gap-2">
                   <Button onClick={handleExport} variant="secondary">
-                    <IconDownload /> Export to CSV
+                    <IconDownload /> {t('masterList.export')}
                   </Button>
-                  {/* --- PERMISSION CHECK --- */}
                   {canManage && (
                     <Button onClick={openAddModal} variant="primary">
-                      <IconPlus /> Add New Master Item
+                      <IconPlus /> {t('masterList.addNew')}
                     </Button>
                   )}
                 </div>
               </div>
 
-              {isLoading && <p>Loading master list...</p>}
-              {error && <p className="text-red-500">{error}</p>}
+              {isLoading && <p>{t('masterList.loading')}</p>}
+              {error && <p className="text-red-500">{t('masterList.error')}</p>}
               
               <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-start">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name & Specification</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved Suppliers</th>
-                      {/* --- PERMISSION CHECK (Hide for non-admins) --- */}
-                      {canManage && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.id')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.category')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.name')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.suppliers')}</th>
+                      {canManage && <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.actions')}</th>}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {masterItems.map((item) => (
                       <tr key={item.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemId}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.category}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t('masterList.categories').includes(item.category) ? item.category : t('masterList.categories')[0]}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.nameAndSpec}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.approvedSuppliers}</td>
-                        {/* --- PERMISSION CHECK --- */}
                         {canManage && (
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
                             <div className="flex justify-end gap-2">
                               <Button variant="secondary" onClick={() => openEditModal(item)} aria-label="Edit"><IconEdit /></Button>
                               <Button variant="danger" onClick={() => handleDelete(item.id)} aria-label="Delete"><IconTrash /></Button>
@@ -427,21 +811,19 @@
                 </table>
               </div>
 
-              {/* Modal is still here, but 'Add' button to open it is hidden */}
-              <Modal isOpen={isModalOpen} onClose={closeModal} title={isEditing ? "Edit Master Item" : "Add New Master Item"} allowClose={true}>
+              <Modal isOpen={isModalOpen} onClose={closeModal} title={isEditing ? t('masterList.modal.editTitle') : t('masterList.modal.addTitle')} allowClose={true}>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Form inputs... (same as before) */}
-                  <Input label="Item ID (e.g., SP-001)" id="itemId" name="itemId" value={form.itemId} onChange={handleChange} required />
-                  <Select label="Category" id="category" name="category" value={form.category} onChange={handleChange}>
+                  <Input label={t('masterList.modal.id')} id="itemId" name="itemId" value={form.itemId} onChange={handleChange} required />
+                  <Select label={t('masterList.modal.category')} id="category" name="category" value={form.category} onChange={handleChange}>
                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </Select>
-                  <Input label="Name & Specification" id="nameAndSpec" name="nameAndSpec" value={form.nameAndSpec} onChange={handleChange} required />
-                  <Input label="Approved Suppliers" id="approvedSuppliers" name="approvedSuppliers" value={form.approvedSuppliers} onChange={handleChange} />
-                  <Input label="Acceptance / Verification Action" id="verificationAction" name="verificationAction" value={form.verificationAction} onChange={handleChange} />
-                  <Input label="Low Stock Threshold" id="lowStockThreshold" name="lowStockThreshold" type="number" min="0" value={form.lowStockThreshold} onChange={handleChange} />
+                  <Input label={t('masterList.modal.name')} id="nameAndSpec" name="nameAndSpec" value={form.nameAndSpec} onChange={handleChange} required />
+                  <Input label={t('masterList.modal.suppliers')} id="approvedSuppliers" name="approvedSuppliers" value={form.approvedSuppliers} onChange={handleChange} />
+                  <Input label={t('masterList.modal.verification')} id="verificationAction" name="verificationAction" value={form.verificationAction} onChange={handleChange} />
+                  <Input label={t('masterList.modal.lowStock')} id="lowStockThreshold" name="lowStockThreshold" type="number" min="0" value={form.lowStockThreshold} onChange={handleChange} />
                   <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
-                    <Button type="submit" variant="primary">{isEditing ? "Save Changes" : "Add Item"}</Button>
+                    <Button type="button" variant="secondary" onClick={closeModal}>{t('masterList.modal.cancel')}</Button>
+                    <Button type="submit" variant="primary">{isEditing ? t('masterList.modal.save') : t('masterList.modal.add')}</Button>
                   </div>
                 </form>
               </Modal>
@@ -451,6 +833,7 @@
 
         // --- Active Inventory Component ---
         const ActiveInventory = ({ db, user, userRole, masterItems }) => {
+          const { t } = useLang();
           const [inventoryItems, setInventoryItems] = useState([]);
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
@@ -463,9 +846,7 @@
             quantity: 1, storageLocation: '', status: 'Approved for Use',
           });
           
-          const statuses = ['Approved for Use', 'Quarantined', 'Disposed', 'Expired'];
-          
-          // Role Check
+          const statuses = Object.keys(t('inventory.status')).map(key => t(`inventory.status.${key}`));
           const canManage = ['admin', 'technician'].includes(userRole);
 
           const masterItemMap = useMemo(() => {
@@ -486,14 +867,14 @@
               });
               setInventoryItems(items);
               setIsLoading(false);
-            }, (err) => { console.error("Error fetching inventory: ", err); setError("Failed to load inventory."); setIsLoading(false); });
+            }, (err) => { console.error("Error fetching inventory: ", err); setError(t('inventory.error')); setIsLoading(false); });
             return () => unsubscribe();
           }, [db, user.uid, masterItemMap]);
 
           const resetForm = () => {
             setForm({
               masterItemId: masterItems.length > 0 ? masterItems[0].id : '', lotNumber: '', dateReceived: '',
-              expirationDate: '', quantity: 1, storageLocation: '', status: 'Approved for Use',
+              expirationDate: '', quantity: 1, storageLocation: '', status: t('inventory.status.approved'),
             });
             setIsEditing(false);
             setCurrentItem(null);
@@ -520,7 +901,7 @@
 
           const handleSubmit = async (e) => {
             e.preventDefault();
-            if (!db || !user || !canManage) return; // Permission Check
+            if (!db || !user || !canManage) return;
             try {
               const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
               if (isEditing) {
@@ -530,26 +911,26 @@
                 const oldStatus = currentItem.status; const newStatus = form.status;
                 if (oldQty !== newQty) {
                   const change = newQty - oldQty;
-                  const action = change > 0 ? "Stock Added" : "Stock Used/Correction";
-                  await logChange(db, user, currentItem, action, change, newQty, newStatus);
+                  const actionKey = change > 0 ? "added" : "correction";
+                  await logChange(db, user, currentItem, actionKey, change, newQty, newStatus);
                 }
                 if (oldStatus !== newStatus && oldQty === newQty) {
-                  await logChange(db, user, currentItem, "Status Change", 0, newQty, newStatus);
+                  await logChange(db, user, currentItem, "status", 0, newQty, newStatus);
                 }
               } else {
                 const newDocRef = await addDoc(collectionRef, form);
                 const newItem = { ...form, id: newDocRef.id, masterItem: masterItemMap[form.masterItemId] };
-                await logChange(db, user, newItem, "New Item Added", form.quantity, form.quantity);
+                await logChange(db, user, newItem, "new", form.quantity, form.quantity);
               }
               closeModal();
             } catch (err) { console.error("Error saving inventory item: ", err); }
           };
           
           const handleTakeStock = async (takeAmount) => {
-            if (!db || !user || !currentItem || !canManage) return; // Permission Check
+            if (!db || !user || !currentItem || !canManage) return;
             const newQuantity = currentItem.quantity - takeAmount;
             try {
-              await logChange(db, user, currentItem, "Stock Used", -takeAmount, newQuantity, currentItem.status);
+              await logChange(db, user, currentItem, "used", -takeAmount, newQuantity, currentItem.status);
               const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', currentItem.id);
               await updateDoc(docRef, { quantity: newQuantity });
               closeModal();
@@ -557,75 +938,91 @@
           };
           
           const handleDelete = async (item) => {
-            if (!canManage || !window.confirm(`Are you sure you want to delete Lot ${item.lotNumber}? This action will be logged.`)) return;
+            if (!canManage || !window.confirm(t('inventory.deleteConfirm', {lotNumber: item.lotNumber}))) return;
             if (!db || !user) return;
             try {
-              await logChange(db, user, item, "Item Deleted", -item.quantity, 0, "Disposed");
+              await logChange(db, user, item, "deleted", -item.quantity, 0, t('inventory.status.disposed'));
               await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', item.id));
             } catch (err) { console.error("Error deleting item: ", err); }
           };
           
           const handleStatusChange = async (docId, newStatus) => {
-            if (!db || !user || !canManage) return; // Permission Check
+            if (!db || !user || !canManage) return;
             const item = inventoryItems.find(i => i.id === docId);
             if (!item) return;
             try {
-              await logChange(db, user, item, "Status Change", 0, item.quantity, newStatus);
+              await logChange(db, user, item, "status", 0, item.quantity, newStatus);
               await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', docId), { status: newStatus });
             } catch (err) { console.error("Error updating status: ", err); }
           };
           
           const getStatusColor = (status, expDate) => {
             const isExpired = expDate && new Date(expDate) < new Date();
-            if (status === 'Disposed') return 'bg-gray-200 text-gray-800';
-            if (status === 'Expired' || isExpired) return 'bg-red-100 text-red-800';
-            if (status === 'Quarantined') return 'bg-yellow-100 text-yellow-800';
+            if (status === t('inventory.status.disposed')) return 'bg-gray-200 text-gray-800';
+            if (status === t('inventory.status.expired') || isExpired) return 'bg-red-100 text-red-800';
+            if (status === t('inventory.status.quarantined')) return 'bg-yellow-100 text-yellow-800';
             return 'bg-green-100 text-green-800';
           };
-
+          
           const lowStockItems = useMemo(() => {
-            return inventoryItems
-              .map(item => {
+            return inventoryItems.map(item => {
                 const masterItem = masterItemMap[item.masterItemId];
                 const threshold = masterItem?.lowStockThreshold || 3;
-                if (item.quantity <= threshold && item.status === 'Approved for Use') {
+                if (item.quantity <= threshold && item.status === t('inventory.status.approved')) {
                   return { id: item.id, name: masterItem ? `${masterItem.itemId} - ${masterItem.nameAndSpec}` : 'Unknown Item',
                     quantity: item.quantity, threshold: threshold, };
                 }
                 return null;
-              })
-              .filter(Boolean);
-          }, [inventoryItems, masterItemMap]);
+              }).filter(Boolean);
+          }, [inventoryItems, masterItemMap, t]);
 
           return (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-800">Active Inventory</h2>
-                {/* --- PERMISSION CHECK --- */}
+                <h2 className="text-2xl font-semibold text-gray-800">{t('inventory.title')}</h2>
                 {canManage && (
                   <Button onClick={openAddModal} variant="primary" disabled={masterItems.length === 0}>
-                    <IconPlus /> Add New Stock
+                    <IconPlus /> {t('inventory.addNew')}
                   </Button>
                 )}
               </div>
               
-              {masterItems.length === 0 && ( /* ... (same as before) ... */ )}
-              {lowStockItems.length > 0 && ( /* ... (same as before) ... */ )}
-              {isLoading && <p>Loading inventory...</p>}
-              {error && <p className="text-red-500">{error}</p>}
+              {masterItems.length === 0 && (
+                 <div className="bg-yellow-100 border-s-4 border-yellow-500 text-yellow-700 p-4 mb-4 text-start" role="alert">
+                   <p>{t('inventory.noMasterItem')}</p>
+                 </div>
+              )}
+
+              {lowStockItems.length > 0 && (
+                <div className="bg-yellow-50 border-s-4 border-yellow-400 p-4 mb-4 rounded-md shadow-sm text-start">
+                  <div className="flex items-center gap-3">
+                    <IconAlertTriangle />
+                    <h3 className="text-lg font-semibold text-yellow-800">{t('inventory.lowStockWarn')}</h3>
+                  </div>
+                  <ul className="mt-2 list-disc list-inside text-yellow-700 space-y-1">
+                    {lowStockItems.map(item => (
+                      <li key={item.id}>
+                        <strong>{item.name}:</strong> {t('inventory.lowStockMsg', {quantity: item.quantity, threshold: item.threshold})}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {isLoading && <p>{t('inventory.loading')}</p>}
+              {error && <p className="text-red-500">{t('inventory.error')}</p>}
 
               <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-start">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot #</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      {/* --- PERMISSION CHECK --- */}
-                      {canManage && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.name')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.lot')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.expires')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.quantity')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.location')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.status')}</th>
+                      {canManage && <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.actions')}</th>}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -634,8 +1031,8 @@
                       const itemName = masterItem ? `${masterItem.itemId} - ${masterItem.nameAndSpec}` : "Loading...";
                       const statusColor = getStatusColor(item.status, item.expirationDate);
                       const lowStockThreshold = masterItem?.lowStockThreshold || 3;
-                      const isLowStock = item.quantity <= lowStockThreshold && item.status === 'Approved for Use';
-                      const canTake = item.quantity > 0 && item.status === 'Approved for Use' && canManage;
+                      const isLowStock = item.quantity <= lowStockThreshold && item.status === t('inventory.status.approved');
+                      const canTake = item.quantity > 0 && item.status === t('inventory.status.approved') && canManage;
                       
                       return (
                         <tr key={item.id}>
@@ -649,15 +1046,14 @@
                               {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                           </td>
-                          {/* --- PERMISSION CHECK --- */}
                           {canManage && (
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
                               <div className="flex justify-end gap-2">
-                                <Button variant="warning" onClick={() => openTakeModal(item)} aria-label="Take" disabled={!canTake}>
-                                  <IconMinus /> Take
+                                <Button variant="warning" onClick={() => openTakeModal(item)} aria-label={t('inventory.take')} disabled={!canTake}>
+                                  <IconMinus /> {t('inventory.take')}
                                 </Button>
-                                <Button variant="secondary" onClick={() => openEditModal(item)} aria-label="Edit"><IconEdit /></Button>
-                                <Button variant="danger" onClick={() => handleDelete(item)} aria-label="Delete"><IconTrash /></Button>
+                                <Button variant="secondary" onClick={() => openEditModal(item)} aria-label={t('inventory.edit')}><IconEdit /></Button>
+                                <Button variant="danger" onClick={() => handleDelete(item)} aria-label={t('inventory.delete')}><IconTrash /></Button>
                               </div>
                             </td>
                           )}
@@ -668,25 +1064,23 @@
                 </table>
               </div>
 
-              {/* Edit/Add Modal */}
-              <Modal isOpen={isModalOpen} onClose={closeModal} title={isEditing ? "Edit Inventory Item" : "Add New Stock Item"} allowClose={true}>
+              <Modal isOpen={isModalOpen} onClose={closeModal} title={isEditing ? t('inventory.modal.editTitle') : t('inventory.modal.addTitle')} allowClose={true}>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Form inputs... (same as before) */}
-                  <Select label="Master Item" id="masterItemId" name="masterItemId" value={form.masterItemId} onChange={handleChange} required disabled={isEditing}>
-                    <option value="" disabled>Select an approved item</option>
+                  <Select label={t('inventory.modal.masterItem')} id="masterItemId" name="masterItemId" value={form.masterItemId} onChange={handleChange} required disabled={isEditing}>
+                    <option value="" disabled>{t('inventory.modal.selectItem')}</option>
                     {masterItems.map(item => (<option key={item.id} value={item.id}>{item.itemId} - {item.nameAndSpec}</option>))}
                   </Select>
-                  <Input label="Lot / Batch Number" id="lotNumber" name="lotNumber" value={form.lotNumber} onChange={handleChange} required disabled={isEditing} />
-                  <Input label="Date Received" id="dateReceived" name="dateReceived" type="date" value={form.dateReceived} onChange={handleChange} required />
-                  <Input label="Expiration Date" id="expirationDate" name="expirationDate" type="date" value={form.expirationDate} onChange={handleChange} />
-                  <Input label="Quantity" id="quantity" name="quantity" type="number" min="0" value={form.quantity} onChange={handleChange} required />
-                  <Input label="Storage Location" id="storageLocation" name="storageLocation" value={form.storageLocation} onChange={handleChange} />
-                  <Select label="Status" id="status" name="status" value={form.status} onChange={handleChange}>
+                  <Input label={t('inventory.modal.lot')} id="lotNumber" name="lotNumber" value={form.lotNumber} onChange={handleChange} required disabled={isEditing} />
+                  <Input label={t('inventory.modal.received')} id="dateReceived" name="dateReceived" type="date" value={form.dateReceived} onChange={handleChange} required />
+                  <Input label={t('inventory.modal.expires')} id="expirationDate" name="expirationDate" type="date" value={form.expirationDate} onChange={handleChange} />
+                  <Input label={t('inventory.modal.quantity')} id="quantity" name="quantity" type="number" min="0" value={form.quantity} onChange={handleChange} required />
+                  <Input label={t('inventory.modal.location')} id="storageLocation" name="storageLocation" value={form.storageLocation} onChange={handleChange} />
+                  <Select label={t('inventory.modal.status')} id="status" name="status" value={form.status} onChange={handleChange}>
                     {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                   </Select>
                   <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
-                    <Button type="submit" variant="primary">{isEditing ? "Save Changes" : "Add Item"}</Button>
+                    <Button type="button" variant="secondary" onClick={closeModal}>{t('masterList.modal.cancel')}</Button>
+                    <Button type="submit" variant="primary">{isEditing ? t('masterList.modal.save') : t('masterList.modal.add')}</Button>
                   </div>
                 </form>
               </Modal>
@@ -698,6 +1092,7 @@
 
         // --- Inventory Log Component ---
         const InventoryLog = ({ db, masterItemMap }) => {
+          const { t } = useLang();
           const [logItems, setLogItems] = useState([]);
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
@@ -714,19 +1109,19 @@
               });
               setLogItems(items);
               setIsLoading(false);
-            }, (err) => { console.error("Error fetching log: ", err); setError("Failed to load inventory log."); setIsLoading(false); });
+            }, (err) => { console.error("Error fetching log: ", err); setError(t('log.error')); setIsLoading(false); });
             return () => unsubscribe();
           }, [db, masterItemMap]);
           
           const handleExport = () => {
-             const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'action', 'quantityChange', 'newQuantity', 'status'];
-            exportToCSV(logItems, headers, 'inventory-log.csv');
+             const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'action', 'quantityChange', 'newQty', 'status'];
+            exportToCSV(logItems, headers, 'inventory-log.csv', t);
           };
           
           const getActionColor = (action) => {
-            if (action.includes("Added")) return 'text-green-600';
-            if (action.includes("Used")) return 'text-yellow-700';
-            if (action.includes("Deleted")) return 'text-red-600';
+            if (action.includes(translations.en.log.actions.added)) return 'text-green-600';
+            if (action.includes(translations.en.log.actions.used)) return 'text-yellow-700';
+            if (action.includes(translations.en.log.actions.deleted)) return 'text-red-600';
             return 'text-gray-600';
           };
           
@@ -739,42 +1134,51 @@
           return (
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-800">Inventory Log</h2>
+                <h2 className="text-2xl font-semibold text-gray-800">{t('log.title')}</h2>
                 <Button onClick={handleExport} variant="secondary">
-                  <IconDownload /> Export to CSV
+                  <IconDownload /> {t('log.export')}
                 </Button>
               </div>
               
-              {isLoading && <p>Loading log...</p>}
-              {error && <p className="text-red-500">{error}</p>}
+              {isLoading && <p>{t('log.loading')}</p>}
+              {error && <p className="text-red-500">{t('log.error')}</p>}
 
               <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-start">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot #</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Qty</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.timestamp')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.user')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.name')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.lot')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.action')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.change')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.newQty')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {logItems.map((item) => (
-                      <tr key={item.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.timestamp, true)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{item.userEmail}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{item.action}</td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{formatChange(item.quantityChange)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.newQuantity}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.status}</td>
-                      </tr>
-                    ))}
+                    {logItems.map((item) => {
+                      // Translate action and status for display
+                      const actionKey = Object.keys(translations.en.log.actions).find(key => translations.en.log.actions[key] === item.action);
+                      const displayAction = t(`log.actions.${actionKey}`) || item.action;
+                      
+                      const statusKey = Object.keys(translations.en.inventory.status).find(key => translations.en.inventory.status[key] === item.status);
+                      const displayStatus = t(`inventory.status.${statusKey}`) || item.status;
+                      
+                      return (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.timestamp, true)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{item.userEmail}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemName}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{displayAction}</td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{formatChange(item.quantityChange)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.newQuantity}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{displayStatus}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -782,69 +1186,58 @@
           );
         };
         
-        // --- NEW: Manage Accounts Component ---
+        // --- Manage Accounts Component ---
         const ManageAccounts = ({ db, user, userRole }) => {
+          const { t } = useLang();
           const [users, setUsers] = useState([]);
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
           
-          const roles = ['admin', 'technician', 'viewer'];
+          const roles = Object.keys(t('admin.roles')); // ['admin', 'technician', 'viewer']
 
           useEffect(() => {
             if (!db || userRole !== 'admin') {
               setIsLoading(false);
               return;
             };
-            
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
             const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-              const userList = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-              }));
+              const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               setUsers(userList);
               setIsLoading(false);
-            }, (err) => {
-              console.error("Error fetching users: ", err);
-              setError("Failed to load user list.");
-              setIsLoading(false);
-            });
-
+            }, (err) => { console.error("Error fetching users: ", err); setError(t('admin.error')); setIsLoading(false); });
             return () => unsubscribe();
           }, [db, userRole]);
           
           const handleRoleChange = async (userId, newRole) => {
             if (userId === user.uid && newRole !== 'admin') {
-              if (!window.confirm("Warning: You are about to remove your own admin status. Are you sure?")) {
-                return; // Don't let admin demote themselves by accident
+              if (!window.confirm(t('admin.demoteWarning'))) {
+                return;
               }
             }
-            
             try {
               const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
               await updateDoc(userDocRef, { role: newRole });
-            } catch (err) {
-              console.error("Error updating role: ", err);
-            }
+            } catch (err) { console.error("Error updating role: ", err); }
           };
 
           if (userRole !== 'admin') {
-            return <div className="p-4 text-red-600">You do not have permission to view this page.</div>;
+            return <div className="p-4 text-red-600">{t('admin.noPermission')}</div>;
           }
-          if (isLoading) return <p>Loading user accounts...</p>;
+          if (isLoading) return <p>{t('admin.loading')}</p>;
           if (error) return <p className="text-red-500">{error}</p>;
 
           return (
             <div className="p-4">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Manage User Accounts</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">{t('admin.title')}</h2>
               
               <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-start">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID (UID)</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.header.email')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.header.uid')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.header.role')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -853,12 +1246,8 @@
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.email}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <Select
-                            id={`role-${u.id}`}
-                            value={u.role}
-                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                          >
-                            {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                          <Select id={`role-${u.id}`} value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)}>
+                            {roles.map(r => <option key={r} value={r}>{t(`admin.roles.${r}`)}</option>)}
                           </Select>
                         </td>
                       </tr>
@@ -871,8 +1260,9 @@
         };
         
         
-        // --- NEW: Auth Page Component ---
+        // --- Auth Page Component ---
         const AuthPage = ({ auth, db }) => {
+          const { t } = useLang();
           const [isLoginView, setIsLoginView] = useState(true);
           const [email, setEmail] = useState('');
           const [password, setPassword] = useState('');
@@ -882,15 +1272,14 @@
           const handleAuthError = (err) => {
             switch (err.code) {
               case 'auth/user-not-found':
-              case 'auth/wrong-password': setError('Invalid email or password.'); break;
-              case 'auth/email-already-in-use': setError('This email address is already in use.'); break;
-              case 'auth/weak-password': setError('Password is too weak. Must be at least 6 characters.'); break;
-              default: setError('An unknown error occurred. Please try again.');
+              case 'auth/wrong-password': setError(t('auth.error.invalid')); break;
+              case 'auth/email-already-in-use': setError(t('auth.error.inUse')); break;
+              case 'auth/weak-password': setError(t('auth.error.weakPass')); break;
+              default: setError(t('auth.error.unknown'));
             }
             console.error("Auth Error: ", err);
           };
           
-          // New User Document creation
           const createNewUserDocument = async (user) => {
             try {
               const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
@@ -899,9 +1288,7 @@
                 email: user.email,
                 role: 'viewer' 
               });
-            } catch (err) {
-              console.error("Error creating user role document: ", err);
-            }
+            } catch (err) { console.error("Error creating user role document: ", err); }
           };
 
           const handleSubmit = async (e) => {
@@ -913,7 +1300,6 @@
                 await signInWithEmailAndPassword(auth, email, password);
               } else {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                // NEW: Create the user doc in Firestore
                 await createNewUserDocument(userCredential.user);
               }
             } catch (err) {
@@ -925,16 +1311,16 @@
           return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
               <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
-                <div><h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">{isLoginView ? 'Sign in to your account' : 'Create a new account'}</h2></div>
+                <div><h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">{isLoginView ? t('auth.signInTitle') : t('auth.signUpTitle')}</h2></div>
                 <div className="flex border-b border-gray-200">
-                  <button onClick={() => setIsLoginView(true)} className={`w-1/2 py-4 px-1 text-center text-sm font-medium ${isLoginView ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>Sign In</button>
-                  <button onClick={() => setIsLoginView(false)} className={`w-1/2 py-4 px-1 text-center text-sm font-medium ${!isLoginView ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>Sign Up</button>
+                  <button onClick={() => setIsLoginView(true)} className={`w-1/2 py-4 px-1 text-center text-sm font-medium ${isLoginView ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>{t('auth.signIn')}</button>
+                  <button onClick={() => setIsLoginView(false)} className={`w-1/2 py-4 px-1 text-center text-sm font-medium ${!isLoginView ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>{t('auth.signUp')}</button>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                  <Input label="Email address" id="email-address" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <Input label="Password" id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input label={t('auth.email')} id="email-address" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input label={t('auth.password')} id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                   {error && <p className="text-red-600 text-sm text-center">{error}</p>}
-                  <div><Button type="submit" variant="primary" className="w-full justify-center" disabled={loading}>{loading ? 'Processing...' : (isLoginView ? 'Sign In' : 'Create Account')}</Button></div>
+                  <div><Button type="submit" variant="primary" className="w-full justify-center" disabled={loading}>{loading ? t('auth.processing') : (isLoginView ? t('auth.signIn') : t('auth.createAccount'))}</Button></div>
                 </form>
               </div>
             </div>
@@ -944,10 +1330,11 @@
 
         // --- Main App Component ---
         function App() {
+          const { t, language, setLanguage } = useLang();
           const [db, setDb] = useState(null);
           const [auth, setAuth] = useState(null);
           const [currentUser, setCurrentUser] = useState(null);
-          const [userRole, setUserRole] = useState(null); // NEW: User Role state
+          const [userRole, setUserRole] = useState(null);
           const [isAuthReady, setIsAuthReady] = useState(false);
           const [currentPage, setCurrentPage] = useState('inventory'); 
           const [masterItems, setMasterItems] = useState([]);
@@ -959,7 +1346,7 @@
           useEffect(() => {
             if (!window.firebase) {
               console.error("Firebase SDKs not loaded!");
-              setAuthError("Failed to load Firebase SDKs.");
+              setAuthError(t('app.connectionErrorMsg'));
               setIsAuthReady(true); return;
             }
             try {
@@ -971,31 +1358,28 @@
 
               const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
                 if (user) {
-                  // User is signed in. Fetch their role.
                   const userDocRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'users', user.uid);
                   const userDoc = await getDoc(userDocRef);
-                  
                   if (userDoc.exists()) {
                     setUserRole(userDoc.data().role);
                   } else {
-                    // This is a failsafe, but signup *should* create this doc.
-                    // This is useful for the Super Admin you created manually
-                    if (userDoc.data() && userDoc.data().role) {
-                       setUserRole(userDoc.data().role);
-                    } else {
-                       // If doc truly doesn't exist, create it.
-                       try {
+                     try {
+                       // This handles the very first 'admin' user you created manually
+                       // or any user that was created before the role system was in place
+                       const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
+                       const userDoc = await getDoc(userDocRef);
+                       if (userDoc.exists() && userDoc.data().role) {
+                         setUserRole(userDoc.data().role);
+                       } else {
+                         // This is a failsafe for a user who exists in Auth but not in Firestore
                          await setDoc(userDocRef, { email: user.email, role: 'viewer' });
                          setUserRole('viewer');
-                       } catch (e) {
-                         console.error("Error creating user doc on the fly: ", e);
                        }
-                    }
+                     } catch (e) { console.error("Error creating user doc on the fly: ", e); }
                   }
                   setCurrentUser(user);
                   setAuthError(null);
                 } else {
-                  // User is signed out
                   setCurrentUser(null);
                   setUserRole(null);
                 }
@@ -1005,7 +1389,7 @@
               
             } catch (e) {
               console.error("Error initializing Firebase: ", e);
-              setAuthError("Failed to initialize database. Check Firebase config.");
+              setAuthError(t('app.authError'));
               setIsAuthReady(true); 
             }
           }, []);
@@ -1024,11 +1408,11 @@
               setMasterLoading(false);
             }, (err) => {
               console.error("Error fetching master list: ", err);
-              setMasterError("Failed to load master list.");
+              setMasterError(t('masterList.error'));
               setMasterLoading(false);
             });
             return () => unsubscribe();
-          }, [db, isAuthReady, currentUser]);
+          }, [db, isAuthReady, currentUser, t]);
           
           const handleSignOut = async () => {
             if (auth) {
@@ -1048,6 +1432,25 @@
             </button>
           );
           
+          const LanguageSwitcher = () => {
+            return (
+              <div className="flex items-center gap-1 bg-gray-200 rounded-full p-1">
+                <button 
+                  onClick={() => setLanguage('en')}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${language === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-700'}`}
+                >
+                  English
+                </button>
+                <button 
+                  onClick={() => setLanguage('fa')}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${language === 'fa' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-700'}`}
+                >
+                  فارسی
+                </button>
+              </div>
+            );
+          };
+          
           const masterItemMap = useMemo(() => {
             return masterItems.reduce((acc, item) => {
               acc[item.id] = item;
@@ -1057,25 +1460,22 @@
           
           // --- Main Render Logic ---
           if (!isAuthReady) {
-             return <div id="loading">Connecting to your lab inventory...</div>
+             return <div id="loading">{t('app.loading')}</div>
           }
           if (authError) {
              return (
-                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
-                  <p className="font-bold">Connection Error</p><p>{authError}</p>
+                <div className="bg-red-100 border-s-4 border-red-500 text-red-700 p-4 m-4 text-start" role="alert">
+                  <p className="font-bold">{t('app.connectionError')}</p><p>{authError}</p>
                 </div>
               );
           }
           if (!currentUser || !userRole) {
-            // User is not logged in, or role is still being fetched
-            // Show login page, but also handle loading state for role
             if (!currentUser) {
               return <AuthPage auth={auth} db={db} />
             }
-            return <div id="loading">Loading user permissions...</div>
+            return <div id="loading">{t('app.loadingPermissions')}</div>
           }
 
-          // If we are here, user is logged in AND role is set
           const PageContent = () => {
             switch(currentPage) {
               case 'inventory':
@@ -1098,26 +1498,35 @@
                   <div className="flex justify-between items-center h-16">
                     <div className="flex items-center gap-3">
                       <IconClipboard />
-                      <h1 className="text-xl font-semibold text-gray-900">Shared Lab Manager (Cloud)</h1>
+                      <h1 className="text-xl font-semibold text-gray-900">{t('app.title')}</h1>
                     </div>
-                    <nav className="flex space-x-2">
-                      <NavButton page="inventory" label="Active Inventory" icon={<IconClipboard />} />
-                      <NavButton page="master" label="Master List" icon={<IconEdit />} />
-                      <NavButton page="log" label="Inventory Log" icon={<IconHistory />} />
-                      {/* --- PERMISSION CHECK --- */}
+                    <nav className="hidden md:flex space-x-2">
+                      <NavButton page="inventory" label={t('nav.inventory')} icon={<IconClipboard />} />
+                      <NavButton page="master" label={t('nav.masterList')} icon={<IconEdit />} />
+                      <NavButton page="log" label={t('nav.log')} icon={<IconHistory />} />
                       {userRole === 'admin' && (
-                        <NavButton page="admin" label="Manage Accounts" icon={<IconAdmin />} />
+                        <NavButton page="admin" label={t('nav.admin')} icon={<IconAdmin />} />
                       )}
                     </nav>
                     <div className="flex items-center gap-4">
-                      <div className="text-sm font-medium text-gray-600">
-                        User: <span className="font-bold text-blue-600">{currentUser.email}</span> (<span className="italic">{userRole}</span>)
+                      <LanguageSwitcher />
+                      <div className="hidden sm:block text-sm font-medium text-gray-600">
+                        {t('app.user')}: <span className="font-bold text-blue-600">{currentUser.email}</span> (<span className="italic">{t(`admin.roles.${userRole}`)}</span>)
                       </div>
                       <Button onClick={handleSignOut} variant="secondary" className="px-3 py-1.5">
-                        <IconSignOut /> Sign Out
+                        <IconSignOut /> <span className="hidden sm:inline">{t('app.signOut')}</span>
                       </Button>
                     </div>
                   </div>
+                  {/* Mobile Nav */}
+                  <nav className="flex md:hidden space-x-2 pb-2 justify-center">
+                      <NavButton page="inventory" label={t('nav.inventory')} icon={<IconClipboard />} />
+                      <NavButton page="master" label={t('nav.masterList')} icon={<IconEdit />} />
+                      <NavButton page="log" label={t('nav.log')} icon={<IconHistory />} />
+                      {userRole === 'admin' && (
+                        <NavButton page="admin" label={t('nav.admin')} icon={<IconAdmin />} />
+                      )}
+                    </nav>
                 </div>
               </header>
               <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -1127,12 +1536,16 @@
           );
         }
 
-        // 6. Render the App
+        // 6. Render the App, wrapped in the Language Provider
         const checkFirebase = setInterval(() => {
           if (window.firebase) {
             clearInterval(checkFirebase);
             const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
+            root.render(
+              <LangProvider>
+                <App />
+              </LangProvider>
+            );
           }
         }, 100);
 
