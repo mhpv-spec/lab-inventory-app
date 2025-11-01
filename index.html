@@ -17,7 +17,13 @@
       // This is a workaround to make Firebase SDKs available to the Babel script
       // by attaching them to the window object.
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-      import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { 
+        getAuth, 
+        onAuthStateChanged,
+        createUserWithEmailAndPassword, // New
+        signInWithEmailAndPassword,     // New
+        signOut                       // New
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
       import { 
         getFirestore, 
         doc, 
@@ -35,7 +41,13 @@
 
       window.firebase = {
         app: { initializeApp },
-        auth: { getAuth, signInAnonymously, onAuthStateChanged },
+        auth: { 
+          getAuth, 
+          onAuthStateChanged,
+          createUserWithEmailAndPassword, // New
+          signInWithEmailAndPassword,     // New
+          signOut                       // New
+        },
         firestore: {
           getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, 
           collection, query, setLogLevel, serverTimestamp, orderBy
@@ -76,7 +88,13 @@
         
         // --- Destructure Firebase from window ---
         const { initializeApp } = window.firebase.app;
-        const { getAuth, signInAnonymously, onAuthStateChanged } = window.firebase.auth;
+        const { 
+          getAuth, 
+          onAuthStateChanged,
+          createUserWithEmailAndPassword,
+          signInWithEmailAndPassword,
+          signOut
+        } = window.firebase.auth;
         const { 
           getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, 
           onSnapshot, collection, query, setLogLevel, serverTimestamp, orderBy 
@@ -108,7 +126,6 @@
           } else {
             formattedDate = date.toLocaleDateString('en-US', dateOptions);
           }
-          // Fix for CSV/Excel date formatting
           return formattedDate.replace(',', ''); 
         };
         
@@ -118,11 +135,8 @@
             return '';
           }
           let strValue = String(value);
-          // If the value contains a comma, double quote, or newline, wrap it in double quotes.
           if (strValue.search(/("|,|\n)/g) >= 0) {
-            // Escape existing double quotes by doubling them
             strValue = strValue.replace(/"/g, '""');
-            // Wrap the whole thing in double quotes
             return `"${strValue}"`;
           }
           return strValue;
@@ -130,19 +144,19 @@
 
         const exportToCSV = (data, headers, filename) => {
           const csvRows = [];
-          // Add header row
           csvRows.push(headers.map(sanitizeForCSV).join(','));
 
-          // Add data rows
           for (const item of data) {
             const values = headers.map(headerKey => {
-              // Handle nested masterItem data for log
               if (headerKey === 'itemName' && item.masterItem) {
                  return sanitizeForCSV(`${item.masterItem.itemId} - ${item.masterItem.nameAndSpec}`);
               }
-              // Handle timestamp formatting for log
               if (headerKey === 'timestamp' && item.timestamp) {
                  return sanitizeForCSV(formatDate(item.timestamp, true));
+              }
+              // Use 'userEmail' for the log's user column
+              if (headerKey === 'userEmail' && item.userEmail) {
+                return sanitizeForCSV(item.userEmail);
               }
               return sanitizeForCSV(item[headerKey]);
             });
@@ -216,6 +230,14 @@
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         );
+        
+        const IconSignOut = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        );
 
         const IconX = () => (
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -253,39 +275,7 @@
           );
         };
         
-        // Modal for User Name
-        const UserNameModal = ({ isOpen, onSave }) => {
-          const [name, setName] = useState('');
-
-          const handleSubmit = (e) => {
-            e.preventDefault();
-            if (name.trim()) {
-              onSave(name.trim());
-            }
-          };
-
-          return (
-            <Modal isOpen={isOpen} title="Welcome!" allowClose={false}>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <Input 
-                  label="Please enter your Name or Initials for the audit log:" 
-                  id="userName" 
-                  name="userName" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  required 
-                  autoFocus
-                />
-                <div className="flex justify-end pt-4 border-t">
-                  <Button type="submit" variant="primary">Save and Continue</Button>
-                </div>
-              </form>
-            </Modal>
-          );
-        };
-
-        // NEW Modal for Taking Stock
-        const TakeStockModal = ({ isOpen, onClose, item, onConfirm, userName }) => {
+        const TakeStockModal = ({ isOpen, onClose, item, onConfirm }) => {
           const [takeAmount, setTakeAmount] = useState(1);
           const [error, setError] = useState('');
           
@@ -306,7 +296,6 @@
             onConfirm(amount);
           };
           
-          // Reset amount when modal opens
           useEffect(() => {
             if (isOpen) {
               setTakeAmount(1);
@@ -362,7 +351,7 @@
         );
 
         const Button = ({ children, onClick, variant = 'primary', type = 'button', ...props }) => {
-          const baseStyle = "px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-2 transition-colors";
+          const baseStyle = "px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-2 transition-colors disabled:opacity-50";
           const variants = {
             primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
             danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
@@ -377,9 +366,9 @@
         };
 
         // --- Log Helper Function ---
-        const logChange = async (db, userId, userName, item, action, quantityChange, newQuantity, newStatus = null) => {
-          if (!db || !appId || !userId || !userName) {
-            console.error("Log failed: DB, AppID, UserID, or UserName missing.");
+        const logChange = async (db, user, item, action, quantityChange, newQuantity, newStatus = null) => {
+          if (!db || !appId || !user || !user.uid || !user.email) {
+            console.error("Log failed: DB, AppID, or User missing.");
             return;
           }
           
@@ -389,8 +378,8 @@
 
           const logEntry = {
             timestamp: serverTimestamp(),
-            userId: userId, 
-            userName: userName, // Added user name
+            userId: user.uid, 
+            userEmail: user.email, // Use email for logging
             inventoryItemId: item.id || 'N/A',
             masterItemId: item.masterItemId,
             itemName: `${masterItem.itemId} - ${masterItem.nameAndSpec}`,
@@ -410,7 +399,7 @@
 
 
         // --- Master List Component ---
-        const MasterList = ({ db, userId, masterItems, isLoading, error }) => {
+        const MasterList = ({ db, user, masterItems, isLoading, error }) => {
           const [isModalOpen, setIsModalOpen] = useState(false);
           const [isEditing, setIsEditing] = useState(false);
           const [currentItemId, setCurrentItemId] = useState(null);
@@ -544,7 +533,7 @@
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemId}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.category}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.nameAndSpec}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.approvedSuppliers}</td>
+                        <td className="px-6 py-4 whitespace-nowGrap text-sm text-gray-500">{item.approvedSuppliers}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.verificationAction}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lowStockThreshold || 3}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -580,14 +569,14 @@
         };
 
         // --- Active Inventory Component ---
-        const ActiveInventory = ({ db, userId, userName, masterItems }) => {
+        const ActiveInventory = ({ db, user, masterItems }) => {
           const [inventoryItems, setInventoryItems] = useState([]);
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
           
           const [isModalOpen, setIsModalOpen] = useState(false);
           const [isEditing, setIsEditing] = useState(false);
-          const [isTakeModalOpen, setIsTakeModalOpen] = useState(false); // New state for "Take" modal
+          const [isTakeModalOpen, setIsTakeModalOpen] = useState(false);
           
           const [currentItem, setCurrentItem] = useState(null); 
           
@@ -635,7 +624,7 @@
             });
 
             return () => unsubscribe();
-          }, [db, userId, masterItemMap]);
+          }, [db, user.uid, masterItemMap]);
 
           const resetForm = () => {
             setForm({
@@ -692,7 +681,7 @@
 
           const handleSubmit = async (e) => {
             e.preventDefault();
-            if (!db || !userId || !userName) return;
+            if (!db || !user) return;
 
             try {
               const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'activeInventory');
@@ -708,18 +697,18 @@
 
                 if (oldQty !== newQty) {
                   const change = newQty - oldQty;
-                  const action = change > 0 ? "Stock Added" : "Stock Used/Correction"; // Make action clearer
-                  await logChange(db, userId, userName, currentItem, action, change, newQty, newStatus);
+                  const action = change > 0 ? "Stock Added" : "Stock Used/Correction";
+                  await logChange(db, user, currentItem, action, change, newQty, newStatus);
                 }
                 
                 if (oldStatus !== newStatus && oldQty === newQty) {
-                  await logChange(db, userId, userName, currentItem, "Status Change", 0, newQty, newStatus);
+                  await logChange(db, user, currentItem, "Status Change", 0, newQty, newStatus);
                 }
 
               } else {
                 const newDocRef = await addDoc(collectionRef, form);
                 const newItem = { ...form, id: newDocRef.id, masterItem: masterItemMap[form.masterItemId] };
-                await logChange(db, userId, userName, newItem, "New Item Added", form.quantity, form.quantity);
+                await logChange(db, user, newItem, "New Item Added", form.quantity, form.quantity);
               }
               closeModal();
             } catch (err) {
@@ -727,17 +716,13 @@
             }
           };
           
-          // New Handler for Take Stock
           const handleTakeStock = async (takeAmount) => {
-            if (!db || !userId || !userName || !currentItem) return;
+            if (!db || !user || !currentItem) return;
             
             const newQuantity = currentItem.quantity - takeAmount;
             
             try {
-              // 1. Log the action
-              await logChange(db, userId, userName, currentItem, "Stock Used", -takeAmount, newQuantity, currentItem.status);
-              
-              // 2. Update the document in Firestore
+              await logChange(db, user, currentItem, "Stock Used", -takeAmount, newQuantity, currentItem.status);
               const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', currentItem.id);
               await updateDoc(docRef, { quantity: newQuantity });
 
@@ -750,9 +735,9 @@
           const handleDelete = async (item) => {
             if (!window.confirm(`Are you sure you want to delete Lot ${item.lotNumber}? This action will be logged.`)) return;
             
-            if (!db || !userId || !userName) return;
+            if (!db || !user) return;
             try {
-              await logChange(db, userId, userName, item, "Item Deleted", -item.quantity, 0, "Disposed");
+              await logChange(db, user, item, "Item Deleted", -item.quantity, 0, "Disposed");
               const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', item.id);
               await deleteDoc(docRef);
             } catch (err) {
@@ -761,13 +746,13 @@
           };
           
           const handleStatusChange = async (docId, newStatus) => {
-            if (!db || !userId || !userName) return;
+            if (!db || !user) return;
             
             const item = inventoryItems.find(i => i.id === docId);
             if (!item) return;
             
             try {
-              await logChange(db, userId, userName, item, "Status Change", 0, item.quantity, newStatus);
+              await logChange(db, user, item, "Status Change", 0, item.quantity, newStatus);
               const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'activeInventory', docId);
               await updateDoc(docRef, { status: newStatus });
             } catch (err) {
@@ -881,7 +866,6 @@
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end gap-2">
-                              {/* New "Take" Button */}
                               <Button variant="warning" onClick={() => openTakeModal(item)} aria-label="Take" disabled={!canTake}>
                                 <IconMinus /> Take
                               </Button>
@@ -921,13 +905,11 @@
                 </form>
               </Modal>
               
-              {/* New "Take Stock" Modal */}
               <TakeStockModal
                 isOpen={isTakeModalOpen}
                 onClose={closeModal}
                 item={currentItem}
                 onConfirm={handleTakeStock}
-                userName={userName}
               />
               
             </div>
@@ -935,7 +917,7 @@
         };
 
         // --- Inventory Log Component ---
-        const InventoryLog = ({ db, masterItemMap }) => { // Pass in masterItemMap
+        const InventoryLog = ({ db, masterItemMap }) => {
           const [logItems, setLogItems] = useState([]);
           const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState(null);
@@ -953,7 +935,6 @@
                 return {
                   id: doc.id,
                   ...data,
-                  // Add masterItem data to each log item for export
                   masterItem: masterItemMap[data.masterItemId] || { itemId: 'N/A', nameAndSpec: 'N/A' }
                 }
               });
@@ -966,14 +947,13 @@
             });
 
             return () => unsubscribe();
-          }, [db, masterItemMap]); // Add masterItemMap dependency
+          }, [db, masterItemMap]);
           
           const handleExport = () => {
              const headers = [
-              'timestamp', 'userName', 'itemName', 'lotNumber', 
+              'timestamp', 'userEmail', 'itemName', 'lotNumber', 
               'action', 'quantityChange', 'newQuantity', 'status'
             ];
-            // We pass the enhanced logItems (which include masterItem data)
             exportToCSV(logItems, headers, 'inventory-log.csv');
           };
           
@@ -1007,7 +987,7 @@
                   <thead className="bg-gray-50">
                     <tr>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Name</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot #</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
@@ -1020,7 +1000,7 @@
                     {logItems.map((item) => (
                       <tr key={item.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.timestamp, true)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{item.userName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{item.userEmail}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemName}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getActionColor(item.action)}`}>{item.action}
@@ -1036,15 +1016,116 @@
             </div>
           );
         };
+        
+        // --- NEW: Auth Page Component ---
+        const AuthPage = ({ auth }) => {
+          const [isLoginView, setIsLoginView] = useState(true);
+          const [email, setEmail] = useState('');
+          const [password, setPassword] = useState('');
+          const [error, setError] = useState(null);
+          const [loading, setLoading] = useState(false);
+
+          const handleAuthError = (err) => {
+            switch (err.code) {
+              case 'auth/user-not-found':
+              case 'auth/wrong-password':
+                setError('Invalid email or password.');
+                break;
+              case 'auth/email-already-in-use':
+                setError('This email address is already in use.');
+                break;
+              case 'auth/weak-password':
+                setError('Password is too weak. Must be at least 6 characters.');
+                break;
+              default:
+                setError('An unknown error occurred. Please try again.');
+            }
+            console.error("Auth Error: ", err);
+          };
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            setError(null);
+            
+            try {
+              if (isLoginView) {
+                await signInWithEmailAndPassword(auth, email, password);
+              } else {
+                await createUserWithEmailAndPassword(auth, email, password);
+              }
+              // onAuthStateChanged will handle the successful login
+            } catch (err) {
+              handleAuthError(err);
+              setLoading(false);
+            }
+          };
+
+          return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+              <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
+                <div>
+                  <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    {isLoginView ? 'Sign in to your account' : 'Create a new account'}
+                  </h2>
+                </div>
+                
+                <div className="flex border-b border-gray-200">
+                  <button
+                    onClick={() => setIsLoginView(true)}
+                    className={`w-1/2 py-4 px-1 text-center text-sm font-medium ${isLoginView ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => setIsLoginView(false)}
+                    className={`w-1/2 py-4 px-1 text-center text-sm font-medium ${!isLoginView ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+                
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                  <Input 
+                    label="Email address" 
+                    id="email-address" 
+                    name="email" 
+                    type="email" 
+                    autoComplete="email" 
+                    required 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <Input 
+                    label="Password" 
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    autoComplete="current-password" 
+                    required 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+
+                  {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+
+                  <div>
+                    <Button type="submit" variant="primary" className="w-full justify-center" disabled={loading}>
+                      {loading ? 'Processing...' : (isLoginView ? 'Sign In' : 'Create Account')}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          );
+        };
 
 
         // --- Main App Component ---
         function App() {
           const [db, setDb] = useState(null);
           const [auth, setAuth] = useState(null);
-          const [userId, setUserId] = useState(null);
-          const [userName, setUserName] = useState(null);
-          const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+          const [currentUser, setCurrentUser] = useState(null);
           const [isAuthReady, setIsAuthReady] = useState(false);
           const [currentPage, setCurrentPage] = useState('inventory'); 
           
@@ -1058,12 +1139,12 @@
           useEffect(() => {
             if (!window.firebase) {
               console.error("Firebase SDKs not loaded!");
-              setAuthError("Failed to load Firebase SDKs. Please check your network connection and refresh.");
+              setAuthError("Failed to load Firebase SDKs.");
+              setIsAuthReady(true);
               return;
             }
             
             try {
-              // setLogLevel('debug'); 
               const app = initializeApp(firebaseConfig);
               const authInstance = getAuth(app);
               const dbInstance = getFirestore(app);
@@ -1071,29 +1152,16 @@
               setAuth(authInstance);
               setDb(dbInstance);
 
-              const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
+              const unsubscribe = onAuthStateChanged(authInstance, (user) => {
                 if (user) {
-                  setUserId(user.uid);
-                  setIsAuthReady(true);
+                  // User is signed in
+                  setCurrentUser(user);
                   setAuthError(null);
-
-                  // Check for user name in local storage
-                  const storedName = localStorage.getItem('labUserName');
-                  if (storedName) {
-                    setUserName(storedName);
-                  } else {
-                    setIsNameModalOpen(true); // Prompt for name
-                  }
-
                 } else {
-                  try {
-                    await signInAnonymously(authInstance);
-                  } catch (authError) {
-                    console.error("Error signing in anonymously: ", authError);
-                    setAuthError("Could not authenticate user. Database functionality is disabled.");
-                    setIsAuthReady(true); 
-                  }
+                  // User is signed out
+                  setCurrentUser(null);
                 }
+                setIsAuthReady(true);
               });
               return () => unsubscribe();
               
@@ -1106,7 +1174,11 @@
 
           // Fetch Master List
           useEffect(() => {
-            if (!isAuthReady || !db) return;
+            if (!isAuthReady || !db || !currentUser) {
+                // Don't fetch if not logged in
+                if (currentUser === null) setMasterLoading(false);
+                return;
+            }
 
             setMasterLoading(true);
             const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'masterList');
@@ -1122,12 +1194,17 @@
             });
 
             return () => unsubscribe();
-          }, [db, userId, isAuthReady]);
+          }, [db, isAuthReady, currentUser]);
           
-          const handleNameSave = (name) => {
-            localStorage.setItem('labUserName', name);
-            setUserName(name);
-            setIsNameModalOpen(false);
+          const handleSignOut = async () => {
+            if (auth) {
+              try {
+                await signOut(auth);
+                // onAuthStateChanged will handle setting currentUser to null
+              } catch (err) {
+                console.error("Error signing out: ", err);
+              }
+            }
           };
 
           const NavButton = ({ page, label, icon }) => (
@@ -1144,7 +1221,6 @@
             </button>
           );
           
-          // Create the map one time here
           const masterItemMap = useMemo(() => {
             return masterItems.reduce((acc, item) => {
               acc[item.id] = item;
@@ -1152,42 +1228,41 @@
             }, {});
           }, [masterItems]);
           
-          const PageContent = () => {
-            if (!isAuthReady || (!userName && !isNameModalOpen)) {
-              return <p className="text-center p-4">Loading authentication & user data...</p>;
-            }
-            
-            if (authError) {
-              return (
+          // --- Main Render Logic ---
+          
+          if (!isAuthReady) {
+             return <div id="loading">Connecting to your lab inventory...</div>
+          }
+          
+          if (authError) {
+             return (
                 <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
                   <p className="font-bold">Connection Error</p>
                   <p>{authError}</p>
-                  <p className="mt-2 text-sm">Please ensure you are connected to the internet.</p>
                 </div>
               );
-            }
-            if (!userId) {
-              return <p className="text-center p-4 text-red-500 font-medium">Authentication failed. Cannot connect to database.</p>;
-            }
-            
-            if (isNameModalOpen) return null; 
-            
+          }
+          
+          if (!currentUser) {
+            return <AuthPage auth={auth} />
+          }
+
+          // If we are here, user is logged in
+          const PageContent = () => {
             switch(currentPage) {
               case 'inventory':
-                return <ActiveInventory db={db} userId={userId} userName={userName} masterItems={masterItems} />;
+                return <ActiveInventory db={db} user={currentUser} masterItems={masterItems} />;
               case 'master':
-                return <MasterList db={db} userId={userId} masterItems={masterItems} isLoading={masterLoading} error={masterError} />;
+                return <MasterList db={db} user={currentUser} masterItems={masterItems} isLoading={masterLoading} error={masterError} />;
               case 'log':
-                return <InventoryLog db={db} masterItemMap={masterItemMap} />; // Pass map here
+                return <InventoryLog db={db} masterItemMap={masterItemMap} />;
               default:
-                return <ActiveInventory db={db} userId={userId} userName={userName} masterItems={masterItems} />;
+                return <ActiveInventory db={db} user={currentUser} masterItems={masterItems} />;
             }
           };
 
           return (
             <div className="min-h-screen font-sans">
-              <UserNameModal isOpen={isNameModalOpen} onSave={handleNameSave} />
-            
               <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex justify-between items-center h-16">
@@ -1200,8 +1275,13 @@
                       <NavButton page="master" label="Master List" icon={<IconEdit />} />
                       <NavButton page="log" label="Inventory Log" icon={<IconHistory />} />
                     </nav>
-                    <div className="text-sm font-medium text-gray-600">
-                      User: <span className="font-bold text-blue-600">{userName || '...'}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm font-medium text-gray-600">
+                        User: <span className="font-bold text-blue-600">{currentUser.email}</span>
+                      </div>
+                      <Button onClick={handleSignOut} variant="secondary" className="px-3 py-1.5">
+                        <IconSignOut /> Sign Out
+                      </Button>
                     </div>
                   </div>
                 </div>
