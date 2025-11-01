@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -160,6 +160,8 @@
                 category: "Category",
                 name: "Name & Specification",
                 suppliers: "Approved Suppliers",
+                verification: "Verification",
+                lowStock: "Low Stock",
                 actions: "Actions"
               },
               deleteConfirm: "Are you sure you want to delete this master item?",
@@ -189,6 +191,7 @@
               header: {
                 name: "Item Name",
                 lot: "Lot #",
+                received: "Received",
                 expires: "Expires",
                 quantity: "Quantity",
                 location: "Location",
@@ -236,12 +239,12 @@
               error: "Failed to load inventory log.",
               header: {
                 timestamp: "Timestamp",
-                user: "User",
-                name: "Item Name",
-                lot: "Lot #",
+                userEmail: "User",
+                itemName: "Item Name",
+                lotNumber: "Lot #",
                 action: "Action",
-                change: "Change",
-                newQty: "New Qty",
+                quantityChange: "Change",
+                newQuantity: "New Qty",
                 status: "Status"
               },
               actions: {
@@ -316,6 +319,8 @@
                 category: "دسته‌بندی",
                 name: "نام و مشخصات",
                 suppliers: "تامین‌کنندگان تایید شده",
+                verification: "Verification",
+                lowStock: "Low Stock",
                 actions: "عملیات"
               },
               deleteConfirm: "آیا از حذف این آیتم اصلی مطمئن هستید؟",
@@ -345,6 +350,7 @@
               header: {
                 name: "نام کالا",
                 lot: "شماره لات",
+                received: "دریافت",
                 expires: "انقضا",
                 quantity: "تعداد",
                 location: "محل نگهداری",
@@ -392,12 +398,12 @@
               error: "بارگذاری گزارش ناموفق بود.",
               header: {
                 timestamp: "زمان",
-                user: "کاربر",
-                name: "نام کالا",
-                lot: "شماره لات",
+                userEmail: "کاربر",
+                itemName: "نام کالا",
+                lotNumber: "شماره لات",
                 action: "عملیات",
-                change: "تغییر",
-                newQty: "موجودی جدید",
+                quantityChange: "تغییر",
+                newQuantity: "موجودی جدید",
                 status: "وضعیت"
               },
               actions: {
@@ -449,13 +455,10 @@
                 result = result[k];
               }
               if (typeof result === 'string') {
-                // Handle simple replacements like {quantity}
                 return result.replace(/\{(\w+)\}/g, (_, paramName) => params[paramName] || '');
               }
-              // Handle nested keys that return an object (e.g., status)
               return result;
             } catch (e) {
-              // Fallback to English if Farsi key is missing
               try {
                 let fallback = translations['en'];
                 for (const k of keys) {
@@ -464,9 +467,9 @@
                 if (typeof fallback === 'string') {
                   return fallback.replace(/\{(\w+)\}/g, (_, paramName) => params[paramName] || '');
                 }
-                return fallback || key; // Return the key as last resort
+                return fallback || key;
               } catch (e2) {
-                 return key; // Return the key itself
+                 return key;
               }
             }
           }, [language]);
@@ -492,7 +495,6 @@
           
           if (!date || isNaN(date.getTime())) return 'N/A';
           
-          // Use 'fa-IR' locale for Farsi dates
           const locale = document.documentElement.lang === 'fa' ? 'fa-IR' : 'en-US';
           
           const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit', calendar: locale === 'fa-IR' ? 'persian' : 'gregory' };
@@ -520,7 +522,10 @@
         const exportToCSV = (data, headers, filename, t) => {
           const csvRows = [];
           // Translate headers for CSV
-          const translatedHeaders = headers.map(h => t(`log.header.${h}`) || t(`masterList.header.${h}`) || h);
+          const translatedHeaders = headers.map(h => {
+             // Try to find header in log, then masterlist, then fallback to key
+             return t(`log.header.${h}`) || t(`masterList.header.${h}`) || h;
+          });
           csvRows.push(translatedHeaders.map(sanitizeForCSV).join(','));
 
           for (const item of data) {
@@ -534,7 +539,7 @@
               if (headerKey === 'userEmail' && item.userEmail) {
                 return sanitizeForCSV(item.userEmail);
               }
-               // Translate status and action fields
+              // Translate status and action fields
               if (headerKey === 'status') {
                 const statusKey = Object.keys(translations.en.inventory.status).find(key => translations.en.inventory.status[key] === item.status);
                 return sanitizeForCSV(t(`inventory.status.${statusKey}`) || item.status);
@@ -578,7 +583,7 @@
         const IconX = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
         const IconAlertTriangle = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 inline-block me-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>);
         const IconAdmin = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
-        const IconGlobe = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>);
+        const IconGlobe = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>);
 
 
         // --- Reusable UI Components ---
@@ -787,6 +792,8 @@
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.category')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.name')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.suppliers')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.verification')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.lowStock')}</th>
                       {canManage && <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">{t('masterList.header.actions')}</th>}
                     </tr>
                   </thead>
@@ -797,6 +804,8 @@
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t('masterList.categories').includes(item.category) ? item.category : t('masterList.categories')[0]}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.nameAndSpec}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.approvedSuppliers}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.verificationAction}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lowStockThreshold || 3}</td>
                         {canManage && (
                           <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
                             <div className="flex justify-end gap-2">
@@ -869,7 +878,7 @@
               setIsLoading(false);
             }, (err) => { console.error("Error fetching inventory: ", err); setError(t('inventory.error')); setIsLoading(false); });
             return () => unsubscribe();
-          }, [db, user.uid, masterItemMap]);
+          }, [db, user.uid, masterItemMap, t]);
 
           const resetForm = () => {
             setForm({
@@ -987,7 +996,7 @@
                 )}
               </div>
               
-              {masterItems.length === 0 && (
+              {masterItems.length === 0 && canManage && (
                  <div className="bg-yellow-100 border-s-4 border-yellow-500 text-yellow-700 p-4 mb-4 text-start" role="alert">
                    <p>{t('inventory.noMasterItem')}</p>
                  </div>
@@ -1018,6 +1027,7 @@
                     <tr>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.name')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.lot')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.received')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.expires')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.quantity')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('inventory.header.location')}</th>
@@ -1038,6 +1048,7 @@
                         <tr key={item.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{itemName}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.lotNumber}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.dateReceived)}</td>
                           <td className={`px-6 py-4 whitespace-nowrap text-sm ${statusColor.includes('red') ? 'font-bold' : 'text-gray-500'}`}>{formatDate(item.expirationDate)}</td>
                           <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isLowStock ? 'font-bold text-yellow-700' : 'text-gray-500'}`}>{isLowStock && <IconAlertTriangle />}{item.quantity}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.storageLocation}</td>
@@ -1114,14 +1125,14 @@
           }, [db, masterItemMap]);
           
           const handleExport = () => {
-             const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'action', 'quantityChange', 'newQty', 'status'];
+             const headers = ['timestamp', 'userEmail', 'itemName', 'lotNumber', 'action', 'quantityChange', 'newQuantity', 'status'];
             exportToCSV(logItems, headers, 'inventory-log.csv', t);
           };
           
           const getActionColor = (action) => {
-            if (action.includes(translations.en.log.actions.added)) return 'text-green-600';
-            if (action.includes(translations.en.log.actions.used)) return 'text-yellow-700';
-            if (action.includes(translations.en.log.actions.deleted)) return 'text-red-600';
+            if (action === translations.en.log.actions.added) return 'text-green-600';
+            if (action === translations.en.log.actions.used) return 'text-yellow-700';
+            if (action === translations.en.log.actions.deleted) return 'text-red-600';
             return 'text-gray-600';
           };
           
@@ -1148,12 +1159,12 @@
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.timestamp')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.user')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.name')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.lot')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.userEmail')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.itemName')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.lotNumber')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.action')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.change')}</th>
-                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.newQty')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.quantityChange')}</th>
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.newQuantity')}</th>
                       <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">{t('log.header.status')}</th>
                     </tr>
                   </thead>
@@ -1246,7 +1257,11 @@
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.email}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <Select id={`role-${u.id}`} value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)}>
+                          <Select
+                            id={`role-${u.id}`}
+                            value={u.role}
+                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                          >
                             {roles.map(r => <option key={r} value={r}>{t(`admin.roles.${r}`)}</option>)}
                           </Select>
                         </td>
@@ -1347,7 +1362,8 @@
             if (!window.firebase) {
               console.error("Firebase SDKs not loaded!");
               setAuthError(t('app.connectionErrorMsg'));
-              setIsAuthReady(true); return;
+              setIsAuthReady(true); 
+              return;
             }
             try {
               const app = initializeApp(firebaseConfig);
@@ -1356,34 +1372,43 @@
               setAuth(authInstance);
               setDb(dbInstance);
 
+              // *** BUG FIX IS HERE ***
+              // This logic is now robust and will not hang.
               const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
-                if (user) {
-                  const userDocRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'users', user.uid);
-                  const userDoc = await getDoc(userDocRef);
-                  if (userDoc.exists()) {
-                    setUserRole(userDoc.data().role);
+                try {
+                  if (user) {
+                    // User is signed in. Fetch their role.
+                    const userDocRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'users', user.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    
+                    if (userDoc.exists()) {
+                      setUserRole(userDoc.data().role);
+                    } else {
+                      // This is a failsafe for the admin or a new user.
+                      // If the doc doesn't exist, they MUST be a new user (role: 'viewer')
+                      // The admin's doc *must* exist from the manual setup.
+                      // We create a 'viewer' doc for a new user on the fly.
+                      console.log("Creating new user doc for " + user.email);
+                      await setDoc(userDocRef, { email: user.email, role: 'viewer' });
+                      setUserRole('viewer');
+                    }
+                    setCurrentUser(user);
+                    setAuthError(null);
                   } else {
-                     try {
-                       // This handles the very first 'admin' user you created manually
-                       // or any user that was created before the role system was in place
-                       const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid);
-                       const userDoc = await getDoc(userDocRef);
-                       if (userDoc.exists() && userDoc.data().role) {
-                         setUserRole(userDoc.data().role);
-                       } else {
-                         // This is a failsafe for a user who exists in Auth but not in Firestore
-                         await setDoc(userDocRef, { email: user.email, role: 'viewer' });
-                         setUserRole('viewer');
-                       }
-                     } catch (e) { console.error("Error creating user doc on the fly: ", e); }
+                    // User is signed out
+                    setCurrentUser(null);
+                    setUserRole(null);
                   }
-                  setCurrentUser(user);
-                  setAuthError(null);
-                } else {
-                  setCurrentUser(null);
+                } catch (e) {
+                  console.error("Critical Auth Error: ", e);
+                  setAuthError("A critical error occurred while fetching user permissions: " + e.message);
+                  setCurrentUser(null); // Log out on critical error
                   setUserRole(null);
+                } finally {
+                  // This is the most important part.
+                  // Always set ready, even if auth logic fails.
+                  setIsAuthReady(true);
                 }
-                setIsAuthReady(true);
               });
               return () => unsubscribe();
               
@@ -1392,7 +1417,7 @@
               setAuthError(t('app.authError'));
               setIsAuthReady(true); 
             }
-          }, []);
+          }, [t]); // Added `t` dependency for error messages
 
           // Fetch Master List
           useEffect(() => {
@@ -1469,13 +1494,16 @@
                 </div>
               );
           }
-          if (!currentUser || !userRole) {
-            if (!currentUser) {
-              return <AuthPage auth={auth} db={db} />
-            }
-            return <div id="loading">{t('app.loadingPermissions')}</div>
+          if (!currentUser) {
+             return <AuthPage auth={auth} db={db} />
+          }
+          
+          if (!userRole) {
+             // This state (currentUser is set but userRole is null) is the new loading screen
+             return <div id="loading">{t('app.loadingPermissions')}</div>
           }
 
+          // If we are here, user is logged in AND role is set
           const PageContent = () => {
             switch(currentPage) {
               case 'inventory':
