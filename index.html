@@ -915,7 +915,8 @@
             return () => unsubscribe();
           }, [db, userId, isAuthReady]);
           
-          const handleNameSave = (name). => {
+          // *** THIS IS THE CORRECTED LINE ***
+          const handleNameSave = (name) => {
             localStorage.setItem('labUserName', name);
             setUserName(name);
             setIsNameModalOpen(false);
@@ -984,7 +985,7 @@
                       <NavButton page="master" label="Master List" icon={<IconEdit />} />
                       <NavButton page="log" label="Inventory Log" icon={<IconHistory />} />
                     </nav>
-                    <div className.="text-sm font-medium text-gray-600">
+                    <div className="text-sm font-medium text-gray-600">
                       User: <span className="font-bold text-blue-600">{userName || '...'}</span>
                     </div>
                   </div>
